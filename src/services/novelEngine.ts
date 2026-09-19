@@ -2655,7 +2655,7 @@ ${draftContent.slice(0, 10000)}
 【作風・トーン】: ${promptSettings.tone || 'ライトノベル・ファンタジー'}
 【作品レーティング】: ${promptSettings.rating === 'r18' ? 'R-18成人向け（二次元ドリーム文庫風）' : '全年齢向け'}
 
-上記の設定に最もマッチする、10〜25文字程度の魅力的でキャッチーな【書籍タイトル案】を【必ず5個】生成してJSON形式で出力してください。`;
+上記の設定に最もマッチする、10〜25文字程度の魅力的でキャッチーな商業ライトノベル風【書籍タイトル案】を【必ず5個】生成してJSON形式で出力してください。`;
 
     const useThink = aiSettings?.thinkCommandTargets?.title !== false;
     const aiOptions = {
@@ -2665,10 +2665,10 @@ ${draftContent.slice(0, 10000)}
 
     let rawResponse = '';
     try {
-      rawResponse = await OllamaService.chat(baseUrl, writerModel, systemPrompt, userPrompt, 0.85, signal, true, aiOptions);
+      rawResponse = await OllamaService.chat(baseUrl, writerModel, systemPrompt, userPrompt, 0.9, signal, true, aiOptions);
     } catch (e: any) {
       if (signal?.aborted) throw e;
-      rawResponse = await OllamaService.chat(baseUrl, writerModel, systemPrompt, userPrompt, 0.85, signal, false, aiOptions);
+      rawResponse = await OllamaService.chat(baseUrl, writerModel, systemPrompt, userPrompt, 0.9, signal, false, aiOptions);
     }
 
     const candidateList: string[] = [];
@@ -2681,7 +2681,9 @@ ${draftContent.slice(0, 10000)}
         .replace(/[」』"】]+$/, '')
         .replace(/^(?:タイトル|題名|案\d*|候補\d*)[：:]\s*/, '')
         .trim();
-      if (clean.length < 3 || clean.length > 35) return null;
+      const lower = clean.toLowerCase();
+      if (['titles', 'title', 'titlelist', 'options', 'candidates', 'items', 'data', 'json', 'storyconcept', 'detailedprompt', 'synopsis'].includes(lower)) return null;
+      if (clean.length < 4 || clean.length > 35) return null;
       if (NovelEngine.isJunkTitle(clean)) return null;
       if (clean.startsWith('主人公は') || clean.startsWith('これは') || clean.includes('物語。') || clean.includes('【あらすじ】')) return null;
       if (NovelEngine.isSynopsisCopy(clean, promptSettings, currentSynopsis)) return null;
@@ -2720,14 +2722,14 @@ ${draftContent.slice(0, 10000)}
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
-        const match = trimmed.match(/^(?:[\d\.\-\*・①②③④⑤#]+|\(?\d+\)?|案\d*|タイトル\d*)[：:\s]*[「『"【]?([^「『"】\n]{3,35})[」』"】]?/);
+        const match = trimmed.match(/^(?:[\d\.\-\*・①②③④⑤#]+|\(?\d+\)?|案\d*|タイトル\d*)[：:\s]*[「『"【]?([^「『"】\n]{4,35})[」』"】]?/);
         if (match && match[1]) {
           const c = cleanTitleCandidate(match[1]);
           if (c && !candidateList.includes(c)) {
             candidateList.push(c);
           }
         } else {
-          const quoteMatch = trimmed.match(/[「『"【]([^「『"】\n]{3,35})[」』"】]/);
+          const quoteMatch = trimmed.match(/[「『"【]([^「『"】\n]{4,35})[」』"】]/);
           if (quoteMatch && quoteMatch[1]) {
             const c = cleanTitleCandidate(quoteMatch[1]);
             if (c && !candidateList.includes(c)) {
@@ -2738,19 +2740,21 @@ ${draftContent.slice(0, 10000)}
       }
     }
 
-    // 3. 万が一5案に満たない場合の確実なスマート・フォールバック候補生成
+    // 3. 5案に満たない場合の確実なスマート・フォールバック候補生成
     const mainKey = themes[0] || '異世界';
-    const subKey = themes.length > 1 ? themes[1] : '迷宮';
-    const thirdKey = themes.length > 2 ? themes[2] : '冒険記';
+    const subKey = themes.length > 1 ? themes[1] : '金属バット';
+    const thirdKey = themes.length > 2 ? themes[2] : 'ドローンAI';
+    const fourthKey = themes.length > 3 ? themes[3] : 'ダンジョン配信';
 
     const fallbackTemplates = [
-      `${mainKey}と${subKey}の${cleanConcept.slice(0, 8) || '物語'}`,
-      `孤高の${mainKey}、${subKey}を往く`,
-      `${mainKey}と挑む${thirdKey}`,
-      `${mainKey}スタイルは折れない！`,
-      `${subKey}一閃！${mainKey}無双録`,
-      `最強の${mainKey}でダンジョン攻略`,
-      `${mainKey}配信者の日常`,
+      `${mainKey}と${subKey}の${fourthKey || 'ダンジョン攻略'}`,
+      `孤高の${mainKey}、${fourthKey || '迷宮配信'}を一人で討つ`,
+      `${subKey}一閃！${fourthKey || 'ソロ配信者'}の無双録`,
+      `${thirdKey}と共に歩む${fourthKey || '深層迷宮'}`,
+      `${mainKey}姿の配信者は今日も静かに無双する`,
+      `${fourthKey || 'ダンジョン配信'}を切り忘れた結果、バズりました`,
+      `${subKey}と${thirdKey}で始める異世界迷宮ライフ`,
+      `${mainKey}配信者、迷宮の最深部で無双中`,
     ];
 
     let templateIdx = 0;
