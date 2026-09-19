@@ -2673,7 +2673,7 @@ ${draftContent.slice(0, 10000)}
 
     const candidateList: string[] = [];
 
-    // タイトル文字列の精査・クレンジングヘルパー
+    // タイトル専用のクレンジング ＆ 特殊文字・指示文除去
     const cleanTitleCandidate = (raw: string): string | null => {
       if (!raw || typeof raw !== 'string') return null;
       let clean = raw
@@ -2681,12 +2681,19 @@ ${draftContent.slice(0, 10000)}
         .replace(/[」』"】]+$/, '')
         .replace(/^(?:タイトル|題名|案\d*|候補\d*)[：:]\s*/, '')
         .trim();
+
+      if (!clean) return null;
       const lower = clean.toLowerCase();
       if (['titles', 'title', 'titlelist', 'options', 'candidates', 'items', 'data', 'json', 'storyconcept', 'detailedprompt', 'synopsis'].includes(lower)) return null;
-      if (clean.length < 4 || clean.length > 35) return null;
-      if (NovelEngine.isJunkTitle(clean)) return null;
-      if (clean.startsWith('主人公は') || clean.startsWith('これは') || clean.includes('物語。') || clean.includes('【あらすじ】')) return null;
+
+      // 2文字〜50文字まで広く許容（短文タイトル「光あれ」「無双」から長文ラノベタイトルまで対応）
+      if (clean.length < 2 || clean.length > 50) return null;
+
+      // メタ指示文やプロンプト命令語の除去
+      if (/(?:あらすじ|詳細指定|指定事項|最優先|必須|命令|ルール|配役|トーン|作品タイトル|サブタイトル|全話プロット|思考プロセス|JSON|レスポンス)/i.test(clean)) return null;
+      if (clean.startsWith('主人公は') || clean.startsWith('これは') || clean.startsWith('この物語は') || clean.includes('【あらすじ】')) return null;
       if (NovelEngine.isSynopsisCopy(clean, promptSettings, currentSynopsis)) return null;
+
       return clean;
     };
 
@@ -2722,14 +2729,14 @@ ${draftContent.slice(0, 10000)}
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
-        const match = trimmed.match(/^(?:[\d\.\-\*・①②③④⑤#]+|\(?\d+\)?|案\d*|タイトル\d*)[：:\s]*[「『"【]?([^「『"】\n]{4,35})[」』"】]?/);
+        const match = trimmed.match(/^(?:[\d\.\-\*・①②③④⑤#]+|\(?\d+\)?|案\d*|タイトル\d*)[：:\s]*[「『"【]?([^「『"】\n]{2,50})[」』"】]?/);
         if (match && match[1]) {
           const c = cleanTitleCandidate(match[1]);
           if (c && !candidateList.includes(c)) {
             candidateList.push(c);
           }
         } else {
-          const quoteMatch = trimmed.match(/[「『"【]([^「『"】\n]{4,35})[」』"】]/);
+          const quoteMatch = trimmed.match(/[「『"【]([^「『"】\n]{2,50})[」』"】]/);
           if (quoteMatch && quoteMatch[1]) {
             const c = cleanTitleCandidate(quoteMatch[1]);
             if (c && !candidateList.includes(c)) {
@@ -2741,20 +2748,32 @@ ${draftContent.slice(0, 10000)}
     }
 
     // 3. 5案に満たない場合の確実なスマート・フォールバック候補生成
-    const mainKey = themes[0] || '異世界';
-    const subKey = themes.length > 1 ? themes[1] : '金属バット';
-    const thirdKey = themes.length > 2 ? themes[2] : 'ドローンAI';
-    const fourthKey = themes.length > 3 ? themes[3] : 'ダンジョン配信';
+    const sanitizeKey = (k: string) => {
+      if (!k) return '';
+      return k
+        .replace(/^[#＃]/, '')
+        .replace(/[「『"』」]/g, '')
+        .replace(/(?:の台詞とともに|の感触|の数|で始まる|一撃必殺の|うっかり|専用|搭載の|配信|攻略|ライブ|パーティー|深層|異世界|ダンジョン)/g, '')
+        .trim()
+        .slice(0, 10);
+    };
+
+    const mainKey = sanitizeKey(themes[0]) || '異世界';
+    const subKey = sanitizeKey(themes[1]) || '金属バット';
+    const thirdKey = sanitizeKey(themes[2]) || 'ドローンAI';
+    const fourthKey = sanitizeKey(themes[3]) || '迷宮配信';
 
     const fallbackTemplates = [
-      `${mainKey}と${subKey}の${fourthKey || 'ダンジョン攻略'}`,
-      `孤高の${mainKey}、${fourthKey || '迷宮配信'}を一人で討つ`,
-      `${subKey}一閃！${fourthKey || 'ソロ配信者'}の無双録`,
-      `${thirdKey}と共に歩む${fourthKey || '深層迷宮'}`,
-      `${mainKey}姿の配信者は今日も静かに無双する`,
-      `${fourthKey || 'ダンジョン配信'}を切り忘れた結果、バズりました`,
-      `${subKey}と${thirdKey}で始める異世界迷宮ライフ`,
-      `${mainKey}配信者、迷宮の最深部で無双中`,
+      `${mainKey}と${subKey}のダンジョン攻略`,
+      `孤高の${mainKey}、${fourthKey}を一人で討つ`,
+      `${subKey}一閃！${fourthKey}の無双録`,
+      `${thirdKey}と共に歩む${fourthKey}`,
+      `${mainKey}は今日も静かに無双する`,
+      `${fourthKey}を切り忘れた結果、バズりました！`,
+      `${subKey}と${thirdKey}で始める迷宮ライフ`,
+      `${mainKey}配信者、深層で無双中`,
+      `『${mainKey}』で無双する日常`,
+      `最強の${subKey}使い`
     ];
 
     let templateIdx = 0;
@@ -2764,6 +2783,21 @@ ${draftContent.slice(0, 10000)}
         candidateList.push(fallbackTitle);
       }
       templateIdx++;
+    }
+
+    // 最終安全装置：万が一それでも5案未満の場合の絶対安全タイトル
+    const ultraSafeFallbacks = [
+      '光あれ！',
+      '深層迷宮の配信者',
+      '金属バット無双録',
+      'ドローンAIと歩む道',
+      'ソロ配信者のダンジョン攻略'
+    ];
+    for (const safeTitle of ultraSafeFallbacks) {
+      if (candidateList.length >= 5) break;
+      if (!candidateList.includes(safeTitle)) {
+        candidateList.push(safeTitle);
+      }
     }
 
     return candidateList.slice(0, 5);
