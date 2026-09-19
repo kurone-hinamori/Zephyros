@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Project, NovelData, Chapter, Scene, ActiveTab } from '../types';
 import { Plus, BookOpen, Trash2, Edit3, Eye, Download, Sparkles, Cpu, Layers, Copy, Check, Clock, BookMarked } from 'lucide-react';
-import { exportNovelAsSplitTxtZip, exportNovelAsSplitMdZip } from '../utils/exportUtils';
+import { exportNovelAsSplitTxtZip, exportNovelAsSplitMdZip, exportNovelAsEpub } from '../utils/exportUtils';
 
 interface ProjectListViewProps {
   projects: Project[];
@@ -93,6 +93,12 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
   const handleExportMd = async () => {
     if (!novelData) return;
     await exportNovelAsSplitMdZip(novelData);
+  };
+
+  // EPUBエクスポート（電子書籍標準形式出力）
+  const handleExportEpub = async () => {
+    if (!novelData) return;
+    await exportNovelAsEpub(novelData);
   };
 
   const handleSceneContentChange = (newContent: string) => {
@@ -357,10 +363,18 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
 
                 <button
                   onClick={handleExportMd}
-                  className="flex items-center space-x-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-colors shadow-lg shadow-indigo-600/30"
+                  className="flex items-center space-x-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   <span>.md 出力</span>
+                </button>
+
+                <button
+                  onClick={handleExportEpub}
+                  className="flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition-colors shadow-lg shadow-emerald-600/30"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>.epub 出力</span>
                 </button>
               </div>
             )}
