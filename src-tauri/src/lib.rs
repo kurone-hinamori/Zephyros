@@ -66,6 +66,15 @@ fn save_app_state(app: tauri::AppHandle, state: AppWindowState) -> Result<(), St
 }
 
 #[tauri::command]
+fn save_binary_file(path: String, data: Vec<u8>) -> Result<(), String> {
+    let p = std::path::PathBuf::from(path.trim());
+    if let Some(parent) = p.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    fs::write(&p, data).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn save_obsidian_file(vault_path: String, relative_path: String, content: String) -> Result<(), String> {
     if vault_path.trim().is_empty() {
         return Ok(());
@@ -359,6 +368,7 @@ pub fn run() {
             save_app_state,
             load_disk_projects,
             save_disk_projects,
+            save_binary_file,
             save_obsidian_file,
             clean_obsidian_project_dir,
             ollama_get_models,

@@ -86,19 +86,34 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
   // TXTエクスポート（シーン分割フォルダ出力）
   const handleExportTxt = async () => {
     if (!novelData) return;
-    await exportNovelAsSplitTxtZip(novelData);
+    try {
+      await exportNovelAsSplitTxtZip(novelData);
+    } catch (e: any) {
+      console.error('TXT export failed:', e);
+      alert(`TXT出力時にエラーが発生しました: ${e?.message || e}`);
+    }
   };
 
   // Markdownエクスポート（シーン分割フォルダ出力）
   const handleExportMd = async () => {
     if (!novelData) return;
-    await exportNovelAsSplitMdZip(novelData);
+    try {
+      await exportNovelAsSplitMdZip(novelData);
+    } catch (e: any) {
+      console.error('Markdown export failed:', e);
+      alert(`Markdown出力時にエラーが発生しました: ${e?.message || e}`);
+    }
   };
 
   // EPUBエクスポート（電子書籍標準形式出力）
   const handleExportEpub = async () => {
     if (!novelData) return;
-    await exportNovelAsEpub(novelData);
+    try {
+      await exportNovelAsEpub(novelData);
+    } catch (e: any) {
+      console.error('EPUB export failed:', e);
+      alert(`EPUB出力時にエラーが発生しました: ${e?.message || e}`);
+    }
   };
 
   const handleSceneContentChange = (newContent: string) => {

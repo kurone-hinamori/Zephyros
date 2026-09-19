@@ -19,6 +19,54 @@ export interface ExportableNovelData {
 }
 
 /**
+ * Blobファイルを即座かつ確実に保存する汎用ヘルパー
+ * (Tauri Native Save Dialog 優先 ＆ DOMダウンロード対応)
+ */
+async function triggerFileDownload(
+  blob: Blob,
+  defaultFilename: string,
+  filterName: string,
+  extensions: string[]
+) {
+  if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+    try {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const filePath = await save({
+        defaultPath: defaultFilename,
+        filters: [{ name: filterName, extensions }],
+      });
+
+      if (filePath) {
+        const buffer = await blob.arrayBuffer();
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('save_binary_file', { path: filePath, data: Array.from(new Uint8Array(buffer)) });
+        return;
+      } else {
+        // ユーザーキャンセルの場合
+        return;
+      }
+    } catch (e) {
+      console.warn('Tauri native save dialog failed, falling back to DOM download:', e);
+    }
+  }
+
+  // フォールバック: ブラウザ / WebView2 DOMダウンロード
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = url;
+  a.download = defaultFilename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    if (document.body.contains(a)) {
+      document.body.removeChild(a);
+    }
+    URL.revokeObjectURL(url);
+  }, 60000);
+}
+
+/**
  * シーンごとに分割したテキストファイルを小説タイトルフォルダ内にまとめてZip出力
  */
 export async function exportNovelAsSplitTxtZip(novelData: ExportableNovelData) {
@@ -43,12 +91,7 @@ export async function exportNovelAsSplitTxtZip(novelData: ExportableNovelData) {
   });
 
   const blob = await zip.generateAsync({ type: 'blob' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${folderName}.zip`;
-  a.click();
-  URL.revokeObjectURL(url);
+  await triggerFileDownload(blob, `${folderName}.zip`, 'Zip Archive', ['zip']);
 }
 
 /**
@@ -77,12 +120,7 @@ export async function exportNovelAsSplitMdZip(novelData: ExportableNovelData) {
   });
 
   const blob = await zip.generateAsync({ type: 'blob' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${folderName}_Markdown.zip`;
-  a.click();
-  URL.revokeObjectURL(url);
+  await triggerFileDownload(blob, `${folderName}_Markdown.zip`, 'Zip Archive', ['zip']);
 }
 
 function escapeXml(str: string): string {
@@ -359,10 +397,5 @@ ruby rt {
   });
 
   const folderName = sanitizeFilename(titleClean);
-  const url = URL.createObjectURL(epubBlob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${folderName}.epub`;
-  a.click();
-  URL.revokeObjectURL(url);
+  await triggerFileDownload(epubBlob, `${folderName}.epub`, 'EPUB eBook', ['epub']);
 }
