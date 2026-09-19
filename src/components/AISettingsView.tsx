@@ -399,6 +399,28 @@ export const AISettingsView: React.FC<AISettingsViewProps> = ({ settings, onSave
               </div>
             </label>
 
+            {/* タイトル生成 AI */}
+            <label className="flex items-start space-x-3 p-3 bg-slate-950/70 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition-colors">
+              <input
+                type="checkbox"
+                checked={formState.thinkCommandTargets?.title ?? true}
+                onChange={(e) =>
+                  setFormState({
+                    ...formState,
+                    thinkCommandTargets: {
+                      ...formState.thinkCommandTargets,
+                      title: e.target.checked,
+                    },
+                  })
+                }
+                className="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500"
+              />
+              <div>
+                <span className="text-xs font-semibold text-slate-200">タイトル生成 AI</span>
+                <p className="text-[11px] text-slate-500">プロットを維持したまま、タイトル候補案のみを個別にAI自動生成</p>
+              </div>
+            </label>
+
             {/* プロット作成 AI */}
             <label className="flex items-start space-x-3 p-3 bg-slate-950/70 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition-colors">
               <input

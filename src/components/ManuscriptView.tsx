@@ -14,6 +14,19 @@ export const ManuscriptView: React.FC<ManuscriptViewProps> = ({ novelData, onUpd
   const [viewMode, setViewMode] = useState<'read' | 'edit'>('read');
   const [rubyPreview, setRubyPreview] = useState<boolean>(true);
   const [copiedNotice, setCopiedNotice] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState('');
+
+  const handleSaveTitle = () => {
+    if (!titleInput.trim() || !novelData) return;
+    const updatedNovel: NovelData = {
+      ...novelData,
+      title: titleInput.trim(),
+      lastUpdatedDate: new Date().toLocaleDateString(),
+    };
+    onUpdateNovelData(updatedNovel);
+    setIsEditingTitle(false);
+  };
 
   const previewRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLTextAreaElement>(null);
@@ -121,7 +134,42 @@ export const ManuscriptView: React.FC<ManuscriptViewProps> = ({ novelData, onUpd
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-100 flex items-center space-x-2">
-            <span>{novelData.title || '無題'}</span>
+            {isEditingTitle ? (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={titleInput}
+                  onChange={(e) => setTitleInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveTitle();
+                    if (e.key === 'Escape') setIsEditingTitle(false);
+                  }}
+                  className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 font-bold"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveTitle}
+                  className="text-emerald-400 hover:text-emerald-300 p-1 cursor-pointer"
+                  title="保存"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <span>{novelData.title || '無題'}</span>
+                <button
+                  onClick={() => {
+                    setTitleInput(novelData.title || '');
+                    setIsEditingTitle(true);
+                  }}
+                  className="text-slate-400 hover:text-amber-300 p-1 transition cursor-pointer"
+                  title="タイトルを変更"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
             <span className="text-xs text-indigo-400 font-normal">({novelData.subtitle})</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">

@@ -71,6 +71,7 @@ export interface Glossary {
 
 export interface ThinkCommandTargets {
   gacha?: boolean; // お題ガチャ AI
+  title?: boolean; // タイトル個別に自動生成 AI
   outline?: boolean; // プロット作成 AI (執筆者AI)
   outlineProofread?: boolean; // プロット校閲 AI (編集者AI)
   write?: boolean; // 本文執筆 AI (執筆者AI)
@@ -79,6 +80,7 @@ export interface ThinkCommandTargets {
 
 export interface SystemPrompts {
   generateGacha?: string; // お題ガチャ AI (コンセプト・あらすじ生成)
+  generateTitle?: string; // タイトル個別に自動生成 AI
   generateOutlineStep1?: string; // プロット全体＆初期設定構成 (Step 1)
   generateOutlineStep2?: string; // 各話プロット・シーン構成 (Step 2)
   writeSceneContent?: string; // 本文リアルタイム執筆 (Writer AI)

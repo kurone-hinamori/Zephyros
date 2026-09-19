@@ -4,7 +4,7 @@ import { NovelEngine } from '../services/novelEngine';
 import { OllamaService } from '../services/ollamaService';
 import { ObsidianSyncService } from '../services/obsidianSyncService';
 import { OllamaLogViewer, OllamaLogEntry } from './OllamaLogViewer';
-import { Cpu, Play, Pause, ShieldCheck, FileText, Sparkles, RefreshCw, RotateCcw, Terminal, FolderCheck } from 'lucide-react';
+import { Cpu, Play, Pause, ShieldCheck, FileText, Sparkles, RefreshCw, RotateCcw, Terminal, FolderCheck, Dices, Edit2, X, Check, Loader2, AlertCircle } from 'lucide-react';
 
 interface GeneratorViewProps {
   projectId: string;
@@ -105,6 +105,54 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
   // Ollama通信ログ可視化モーダル状態
   const [isLogViewerOpen, setIsLogViewerOpen] = useState(false);
   const [ollamaLogs] = useState<OllamaLogEntry[]>([]);
+
+  // タイトル個別自動生成・編集モーダル状態
+  const [isTitleModalOpen, setIsTitleModalOpen] = useState(false);
+  const [titleInput, setTitleInput] = useState<string>('');
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+  const [titleCandidates, setTitleCandidates] = useState<string[]>([]);
+  const [titleError, setTitleError] = useState<string | null>(null);
+
+  const handleGenerateTitleCandidates = async () => {
+    if (isGeneratingTitle) return;
+    setIsGeneratingTitle(true);
+    setTitleError(null);
+    try {
+      const candidates = await NovelEngine.generateTitles(
+        aiSettings.ollamaUrl,
+        aiSettings.writerModel,
+        promptSettings,
+        currentNovelData?.synopsis || promptSettings.detailedPrompt,
+        undefined,
+        aiSettings
+      );
+      setTitleCandidates(candidates);
+    } catch (err: any) {
+      console.error('Title generation failed:', err);
+      setTitleError(`タイトル生成に失敗しました (${err.message})`);
+    } finally {
+      setIsGeneratingTitle(false);
+    }
+  };
+
+  const handleSaveTitle = (newTitle: string) => {
+    if (!newTitle.trim() || !currentNovelData) return;
+    const cleanTitle = newTitle.trim();
+    const oldTitle = currentNovelData.title;
+    const updatedNovel: NovelData = {
+      ...currentNovelData,
+      title: cleanTitle,
+      lastUpdatedDate: new Date().toLocaleDateString(),
+    };
+    onSaveNovelData(updatedNovel, projectId);
+    setLocalNovelData(updatedNovel);
+    setIsTitleModalOpen(false);
+    setEditorLog((prev) => [
+      ...prev,
+      `[システム] 作品タイトルを「${oldTitle}」から「${cleanTitle}」へ変更・更新しました。`,
+    ]);
+    triggerObsidianSync(updatedNovel);
+  };
 
   const streamingEndRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<number | null>(null);
@@ -945,6 +993,18 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
               </div>
 
               <button
+                onClick={() => {
+                  setTitleInput(currentNovelData?.title || '');
+                  setIsTitleModalOpen(true);
+                }}
+                className="flex items-center space-x-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-xs rounded-xl border border-slate-700/80 transition-colors cursor-pointer"
+                title="プロットを再作成せずに、作品タイトルのみをAIで個別生成・変更します"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>タイトル生成</span>
+              </button>
+
+              <button
                 onClick={handleGenerateOutline}
                 className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-colors"
                 title="プロット再生成"
@@ -1004,8 +1064,21 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h3 className="text-sm font-bold text-slate-200 flex items-center space-x-2">
               <FileText className="w-4 h-4 text-indigo-400" />
-              <span>
-                {currentNovelData ? currentNovelData.title : '未生成'} — 本文執筆モニター
+              <span className="flex items-center space-x-1.5">
+                <span>{currentNovelData ? currentNovelData.title : '未生成'}</span>
+                {currentNovelData && (
+                  <button
+                    onClick={() => {
+                      setTitleInput(currentNovelData.title);
+                      setIsTitleModalOpen(true);
+                    }}
+                    className="p-1 text-slate-400 hover:text-amber-300 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer ml-1"
+                    title="タイトルのみを個別変更・AI自動生成"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <span>— 本文執筆モニター</span>
               </span>
             </h3>
             {streamingText && (
@@ -1102,6 +1175,124 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
         onClose={() => setIsLogViewerOpen(false)}
         logs={ollamaLogs}
       />
+
+      {/* タイトル個別自動生成・変更モーダル */}
+      {isTitleModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-bold text-slate-100">作品タイトルの個別変更・AI自動生成</h3>
+              </div>
+              <button
+                onClick={() => setIsTitleModalOpen(false)}
+                className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400 leading-relaxed">
+              プロット構成や執筆済みの原稿データを壊すことなく、作品タイトルのみをAIで候補作成または手動変更できます。
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  作品タイトル
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={titleInput}
+                    onChange={(e) => setTitleInput(e.target.value)}
+                    placeholder="タイトルを入力"
+                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 font-medium"
+                  />
+                  <button
+                    onClick={() => handleSaveTitle(titleInput)}
+                    disabled={!titleInput.trim()}
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition shadow-md whitespace-nowrap cursor-pointer"
+                  >
+                    適用
+                  </button>
+                </div>
+              </div>
+
+              {/* AI生成ボタン */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleGenerateTitleCandidates}
+                  disabled={isGeneratingTitle}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {isGeneratingTitle ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>AIがタイトル候補を思考・生成中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Dices className="w-4 h-4" />
+                      <span>AIでタイトル候補を自動生成 (5案)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {titleError && (
+                <div className="bg-rose-950/60 border border-rose-800 text-rose-300 p-3 rounded-xl text-xs flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{titleError}</span>
+                </div>
+              )}
+
+              {/* 生成された候補リスト */}
+              {titleCandidates.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                  <label className="block text-xs font-semibold text-amber-300">
+                    AI生成タイトル候補 (クリックして入力欄にセット):
+                  </label>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    {titleCandidates.map((cand, idx) => (
+                      <button
+                        key={`title-cand-${idx}`}
+                        onClick={() => setTitleInput(cand)}
+                        className={`w-full text-left p-2.5 rounded-xl border text-xs transition-all flex items-center justify-between cursor-pointer ${
+                          titleInput === cand
+                            ? 'bg-amber-950/60 border-amber-500 text-amber-200 font-bold ring-1 ring-amber-500'
+                            : 'bg-slate-950 border-slate-800 text-slate-200 hover:border-slate-700 hover:bg-slate-900'
+                        }`}
+                      >
+                        <span>{cand}</span>
+                        {titleInput === cand && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-3 border-t border-slate-800">
+              <button
+                onClick={() => setIsTitleModalOpen(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition cursor-pointer"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => handleSaveTitle(titleInput)}
+                disabled={!titleInput.trim()}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-indigo-600/30 cursor-pointer"
+              >
+                確定して保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
