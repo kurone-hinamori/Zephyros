@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NovelData, Chapter, Scene } from '../types';
-import { FileText, Download, Eye, Edit3, Layers, Copy, Check } from 'lucide-react';
-import { exportNovelAsSplitTxtZip, exportNovelAsSplitMdZip } from '../utils/exportUtils';
+import { FileText, Download, Eye, Edit3, Layers, Copy, Check, BookOpen } from 'lucide-react';
+import { exportNovelAsSplitTxtZip, exportNovelAsSplitMdZip, exportNovelAsEpub } from '../utils/exportUtils';
 
 interface ManuscriptViewProps {
   novelData: NovelData | null;
@@ -88,6 +88,12 @@ export const ManuscriptView: React.FC<ManuscriptViewProps> = ({ novelData, onUpd
     await exportNovelAsSplitMdZip(novelData);
   };
 
+  // EPUBエクスポート（電子書籍標準形式出力）
+  const handleExportEpub = async () => {
+    if (!novelData) return;
+    await exportNovelAsEpub(novelData);
+  };
+
   // 本文編集時の変更反映
   const handleSceneContentChange = (newContent: string) => {
     const updatedNovel: NovelData = JSON.parse(JSON.stringify(novelData));
@@ -167,10 +173,18 @@ export const ManuscriptView: React.FC<ManuscriptViewProps> = ({ novelData, onUpd
 
           <button
             onClick={handleExportMd}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-colors shadow-lg shadow-indigo-600/30"
+            className="flex items-center space-x-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl transition-colors"
           >
             <Download className="w-4 h-4" />
             <span>.md 出力</span>
+          </button>
+
+          <button
+            onClick={handleExportEpub}
+            className="flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition-colors shadow-lg shadow-emerald-600/30"
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>.epub 出力</span>
           </button>
         </div>
       </div>
