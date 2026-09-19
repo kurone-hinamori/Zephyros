@@ -162,6 +162,7 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
               (proj.novelData?.chapters.length && proj.novelData.chapters.length > 0
                 ? proj.novelData.chapters.length
                 : 12);
+            const isCompleted = completedChCount >= targetChCount && completedChCount > 0;
 
             return (
               <div
@@ -169,15 +170,27 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
                 onClick={() => onSelectProject(proj.id)}
                 className={`bg-slate-900 border rounded-2xl p-5 space-y-4 cursor-pointer transition-all relative flex flex-col justify-between ${
                   isSelected
-                    ? 'border-indigo-500 shadow-xl shadow-indigo-950/60 ring-1 ring-indigo-500'
+                    ? isCompleted
+                      ? 'border-emerald-500 shadow-xl shadow-emerald-950/60 ring-1 ring-emerald-500'
+                      : 'border-indigo-500 shadow-xl shadow-indigo-950/60 ring-1 ring-indigo-500'
+                    : isCompleted
+                    ? 'border-emerald-800/80 hover:border-emerald-700 hover:bg-slate-900/90'
                     : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
                 }`}
               >
                 <div className="space-y-2">
                   <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-base text-slate-100 line-clamp-1 flex-1 mr-2">
-                      {proj.novelData?.title || proj.title || '無題作品'}
-                    </h4>
+                    <div className="flex items-center space-x-2 flex-1 mr-2 min-w-0">
+                      <h4 className="font-bold text-base text-slate-100 line-clamp-1">
+                        {proj.novelData?.title || proj.title || '無題作品'}
+                      </h4>
+                      {isCompleted && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700/80 shrink-0 flex items-center space-x-0.5 shadow-sm">
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span>全話完成</span>
+                        </span>
+                      )}
+                    </div>
 
                     <div className="flex items-center space-x-1 shrink-0">
                       <button
@@ -224,8 +237,10 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
 
                 <div className="border-t border-slate-800/80 pt-3 space-y-3">
                   <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-slate-400">
-                      進捗: <strong className="text-indigo-300">{completedChCount}</strong> / {targetChCount} 話
+                    <span className={isCompleted ? "text-emerald-400 font-bold flex items-center space-x-1" : "text-slate-400"}>
+                      <span>進捗:</span>
+                      <strong className={isCompleted ? "text-emerald-300 font-bold" : "text-indigo-300"}>{completedChCount}</strong> / {targetChCount} 話
+                      {isCompleted && <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800 font-sans">🎉 完成</span>}
                     </span>
                     <span className="text-slate-400">
                       <strong className="text-emerald-400">{totalWords.toLocaleString()}</strong> 文字
@@ -276,10 +291,14 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
                         onSelectProject(proj.id);
                         onNavigateToTab('generate');
                       }}
-                      className="flex items-center justify-center space-x-1 px-2.5 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800 text-emerald-200 text-xs font-bold transition-colors"
+                      className={`flex items-center justify-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                        isCompleted
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-900/40 border border-emerald-500'
+                          : 'bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800 text-emerald-200'
+                      }`}
                     >
                       <Cpu className="w-3.5 h-3.5" />
-                      <span>自動執筆</span>
+                      <span>{isCompleted ? '完成原稿・執筆' : '自動執筆'}</span>
                     </button>
                   </div>
 
@@ -300,19 +319,33 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
       </div>
 
       {/* 下部: 選択中の作品の原稿閲覧・推敲エリア */}
-      {activeProject && (
-        <div className="border-t border-slate-800 pt-6 space-y-6">
-          {/* 原稿ヘッダー ＆ エクスポート */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-800 uppercase">
-                  原稿プレビュー・編集
-                </span>
-                <h3 className="text-lg font-bold text-slate-100">
-                  {novelData?.title || activeProject.title}
-                </h3>
-              </div>
+      {activeProject && (() => {
+        const activeProjectCompleted = Boolean(
+          novelData &&
+          novelData.chapters.length > 0 &&
+          novelData.chapters.every(
+            (c) => c.status === 'completed' || (c.scenes.length > 0 && c.scenes.every((sc) => sc.wordCount > 0))
+          )
+        );
+
+        return (
+          <div className="border-t border-slate-800 pt-6 space-y-6">
+            {/* 原稿ヘッダー ＆ エクスポート */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase flex items-center space-x-1 ${
+                    activeProjectCompleted
+                      ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
+                      : 'bg-indigo-950 text-indigo-300 border-indigo-800'
+                  }`}>
+                    {activeProjectCompleted && <Check className="w-3 h-3 text-emerald-400 mr-0.5" />}
+                    <span>{activeProjectCompleted ? '🎉 完成原稿プレビュー・編集' : '原稿プレビュー・編集'}</span>
+                  </span>
+                  <h3 className="text-lg font-bold text-slate-100">
+                    {novelData?.title || activeProject.title}
+                  </h3>
+                </div>
               <p className="text-xs text-slate-400 mt-1">
                 全 {novelData?.chapters.length || 0} 話 / 総文字数: <strong className="text-emerald-400 font-mono">{(novelData?.totalWordCount || 0).toLocaleString()}</strong> 文字
               </p>
@@ -504,7 +537,8 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
             </div>
           )}
         </div>
-      )}
+      );
+    })()}
     </div>
   );
 };
