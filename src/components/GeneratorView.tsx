@@ -127,6 +127,9 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
         aiSettings
       );
       setTitleCandidates(candidates);
+      if (candidates.length > 0) {
+        setTitleInput(candidates[0]);
+      }
     } catch (err: any) {
       console.error('Title generation failed:', err);
       setTitleError(`タイトル生成に失敗しました (${err.message})`);

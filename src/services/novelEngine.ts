@@ -18,14 +18,19 @@ export const DEFAULT_SYSTEM_PROMPTS: SystemPrompts = {
 }`,
 
   generateTitle: `あなたはプロの長編小説編集者・キャッチコピーライターAIです。
-ユーザーが指定した【お題キーワード】【コンセプト】【あらすじ】を活かし、読者の目を惹く魅力的でキャッチーな【書籍タイトル案】を3〜5パターン作成してください。
+ユーザーが指定した【お題キーワード】【コンセプト】【あらすじ】を元に、読者の目を惹く魅力的でキャッチーな【書籍タイトル案】を【必ず5パターン】作成してください。
 
-【タイトル策定ルール】
-1. 10〜25文字程度の短く印象的な【今回のお題専用のオリジナル書籍タイトル】を作成してください。
-2. 王道ラノベ風、シリアス・重厚風、短くスタイリッシュなタイプなど多様な切口のバリエーションを用意してください。
-3. あらすじ本文や指定文そのままの長文（例: 『【あらすじ】現代に現れた...』）をそのままタイトルに設定することは絶対禁止です。
+【タイトル策定の厳律ルール】
+1. 10〜25文字程度の短く印象的な【書籍タイトル】を作成してください。
+2. あらすじ説明文そのままの長文（例: 「主人公は〜〜の物語」）を出力することは絶対禁止です。必ず出版書籍の表紙に躍るような洗練されたタイトル（題名）にしてください。
+3. 以下の5種類のバリエーションを取り揃えてください：
+   - 案1: 王道ライトノベル風タイトル（例: 『〜〜だけど、〜〜します』）
+   - 案2: ショート＆スタイリッシュタイトル（2〜6文字のシンプルで鋭い題名）
+   - 案3: お題キーワード強調タイトル（お題アイテム・武器・職業を前面に出した題名）
+   - 案4: ドラマティック・バトル/スローライフ風タイトル
+   - 案5: キャラクター・相棒フィーチャー風タイトル
 
-必ず以下のJSON形式でのみ出力してください：
+思考プロセス(<think>)や解説文は一切含めず、必ず以下のJSON形式でのみ出力してください：
 {
   "titles": [
     "タイトル案1",
@@ -215,14 +220,14 @@ export const R18_SYSTEM_PROMPTS: SystemPrompts = {
 }`,
 
   generateTitle: `あなたはプロのR-18（成人向け二次元ドリーム文庫風）長編小説編集者・キャッチコピーライターAIです。
-ユーザーが指定した【お題キーワード】【コンセプト】【あらすじ】を活かし、二次元ドリーム文庫のような魅力的で刺激的な【成人向け書籍タイトル案】を3〜5パターン作成してください。
+ユーザーが指定した【お題キーワード】【コンセプト】【あらすじ】を元に、二次元ドリーム文庫のような魅力的で刺激的な【成人向け書籍タイトル案】を【必ず5パターン】作成してください。
 
-【タイトル策定ルール】
-1. 10〜25文字程度の短く印象的な書籍タイトルを作成してください。
-2. 二次元ドリーム文庫風のファンタジー感やヒロインの魅力を押し出したタイトル案を揃えてください。
-3. あらすじ本文や指定文そのままの長文をそのままタイトルに設定することは絶対禁止です。
+【タイトル策定の厳律ルール】
+1. 10〜25文字程度の短く印象的な【書籍タイトル】を作成してください。
+2. あらすじ説明文そのままの長文を出力することは絶対禁止です。必ず出版書籍の表紙に躍るような魅惑的でキャッチーなタイトル（題名）にしてください。
+3. 5種類の異なる切り口のバリエーションを取り揃えてください。
 
-必ず以下のJSON形式でのみ出力してください：
+思考プロセス(<think>)や解説文は一切含めず、必ず以下のJSON形式でのみ出力してください：
 {
   "titles": [
     "タイトル案1",
@@ -2624,7 +2629,7 @@ ${draftContent.slice(0, 10000)}
   }
 
   /**
-   * お題・コンセプト・あらすじ等からタイトル案（3〜5個）をAIで個別生成する
+   * お題・コンセプト・あらすじ等からタイトル案（必ず5個）をAIで個別生成する
    */
   static async generateTitles(
     baseUrl: string,
@@ -2636,14 +2641,21 @@ ${draftContent.slice(0, 10000)}
   ): Promise<string[]> {
     const systemPrompt = NovelEngine.resolveSystemPrompt('generateTitle', promptSettings, aiSettings);
 
-    const themes = promptSettings.themes.length > 0 ? promptSettings.themes.join(', ') : '異世界, ファンタジー';
-    const userPrompt = `【お題キーワード】: ${themes}
-【ストーリーコンセプト】: ${promptSettings.storyConcept || '未設定'}
-【あらすじ・詳細指定】: ${currentSynopsis || promptSettings.detailedPrompt || '未設定'}
+    const themes = promptSettings.themes.length > 0 ? promptSettings.themes : ['異世界', 'ダンジョン', '冒険'];
+    const themeStr = themes.join(', ');
+    const cleanConcept = NovelEngine.sanitizePromptConcept(promptSettings.storyConcept);
+    let cleanSynopsis = (currentSynopsis || promptSettings.detailedPrompt || '').trim();
+    if (cleanSynopsis.length > 250) {
+      cleanSynopsis = cleanSynopsis.slice(0, 250) + '...';
+    }
+
+    const userPrompt = `【お題キーワード】: ${themeStr}
+【メインコンセプト】: ${cleanConcept || '未設定'}
+【あらすじ概要】: ${cleanSynopsis || '未設定'}
 【作風・トーン】: ${promptSettings.tone || 'ライトノベル・ファンタジー'}
 【作品レーティング】: ${promptSettings.rating === 'r18' ? 'R-18成人向け（二次元ドリーム文庫風）' : '全年齢向け'}
 
-上記の設定に最もマッチする、魅力的でキャッチーな作品タイトル案を3〜5個生成してください。`;
+上記の設定に最もマッチする、10〜25文字程度の魅力的でキャッチーな【書籍タイトル案】を【必ず5個】生成してJSON形式で出力してください。`;
 
     const useThink = aiSettings?.thinkCommandTargets?.title !== false;
     const aiOptions = {
@@ -2659,45 +2671,98 @@ ${draftContent.slice(0, 10000)}
       rawResponse = await OllamaService.chat(baseUrl, writerModel, systemPrompt, userPrompt, 0.85, signal, false, aiOptions);
     }
 
+    const candidateList: string[] = [];
+
+    // タイトル文字列の精査・クレンジングヘルパー
+    const cleanTitleCandidate = (raw: string): string | null => {
+      if (!raw || typeof raw !== 'string') return null;
+      let clean = raw
+        .replace(/^[0-9一二三四五①②③④⑤\.\-\*\s#【『"「]+/, '')
+        .replace(/[」』"】]+$/, '')
+        .replace(/^(?:タイトル|題名|案\d*|候補\d*)[：:]\s*/, '')
+        .trim();
+      if (clean.length < 3 || clean.length > 35) return null;
+      if (NovelEngine.isJunkTitle(clean)) return null;
+      if (clean.startsWith('主人公は') || clean.startsWith('これは') || clean.includes('物語。') || clean.includes('【あらすじ】')) return null;
+      if (NovelEngine.isSynopsisCopy(clean, promptSettings, currentSynopsis)) return null;
+      return clean;
+    };
+
+    // 1. JSONパースによる抽出
     try {
       const parsed = this.cleanAndParseJson(rawResponse);
-      const rawTitles = parsed.titles || parsed.titleList || parsed["タイトル案"] || parsed["タイトル"] || [];
-      if (Array.isArray(rawTitles) && rawTitles.length > 0) {
-        const cleaned = rawTitles
-          .map((t: any) => String(t).replace(/^[\d\.\-\*\s"「『【]+/, '').replace(/["」』】]+$/, '').trim())
-          .filter((t: string) => t.length >= 2 && t.length <= 40 && !NovelEngine.isJunkTitle(t));
-        if (cleaned.length > 0) return cleaned;
-      }
-      if (typeof parsed.title === 'string' && parsed.title.trim()) {
-        const clean = parsed.title.replace(/^[\d\.\-\*\s"「『【]+/, '').replace(/["」』】]+$/, '').trim();
-        if (clean.length >= 2 && !NovelEngine.isJunkTitle(clean)) return [clean];
+      if (parsed) {
+        let rawTitles: any[] = [];
+        if (Array.isArray(parsed)) {
+          rawTitles = parsed;
+        } else if (typeof parsed === 'object') {
+          rawTitles = parsed.titles || parsed.titleList || parsed.options || parsed.candidates || parsed["タイトル案"] || parsed["タイトル"] || parsed["書籍タイトル案"] || [];
+          if (!Array.isArray(rawTitles) || rawTitles.length === 0) {
+            for (const [k, v] of Object.entries(parsed)) {
+              if (typeof v === 'string' && (k.toLowerCase().includes('title') || k.includes('タイトル') || k.includes('案'))) {
+                rawTitles.push(v);
+              }
+            }
+          }
+        }
+        for (const item of rawTitles) {
+          const c = cleanTitleCandidate(String(item));
+          if (c && !candidateList.includes(c)) {
+            candidateList.push(c);
+          }
+        }
       }
     } catch (_) {}
 
-    // 生テキストからのフォールバックレスキュー
-    const matches = Array.from(rawResponse.matchAll(/(?:^|\n)[\d\.\-\*\s]*[「『"【]?([^「『"】\n]{3,30})[」』"】]?/g));
-    const rescued: string[] = [];
-    for (const m of matches) {
-      const candidate = m[1].trim();
-      if (
-        candidate &&
-        candidate.length >= 3 &&
-        candidate.length <= 35 &&
-        !candidate.includes('titles') &&
-        !candidate.includes('storyConcept') &&
-        !candidate.includes('あらすじ') &&
-        !NovelEngine.isJunkTitle(candidate) &&
-        !rescued.includes(candidate)
-      ) {
-        rescued.push(candidate);
+    // 2. 生テキストからの箇条書き・行単位抽出
+    if (candidateList.length < 5) {
+      const lines = rawResponse.split(/\r?\n/);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const match = trimmed.match(/^(?:[\d\.\-\*・①②③④⑤#]+|\(?\d+\)?|案\d*|タイトル\d*)[：:\s]*[「『"【]?([^「『"】\n]{3,35})[」』"】]?/);
+        if (match && match[1]) {
+          const c = cleanTitleCandidate(match[1]);
+          if (c && !candidateList.includes(c)) {
+            candidateList.push(c);
+          }
+        } else {
+          const quoteMatch = trimmed.match(/[「『"【]([^「『"】\n]{3,35})[」』"】]/);
+          if (quoteMatch && quoteMatch[1]) {
+            const c = cleanTitleCandidate(quoteMatch[1]);
+            if (c && !candidateList.includes(c)) {
+              candidateList.push(c);
+            }
+          }
+        }
       }
     }
 
-    if (rescued.length > 0) {
-      return rescued.slice(0, 5);
+    // 3. 万が一5案に満たない場合の確実なスマート・フォールバック候補生成
+    const mainKey = themes[0] || '異世界';
+    const subKey = themes.length > 1 ? themes[1] : '迷宮';
+    const thirdKey = themes.length > 2 ? themes[2] : '冒険記';
+
+    const fallbackTemplates = [
+      `${mainKey}と${subKey}の${cleanConcept.slice(0, 8) || '物語'}`,
+      `孤高の${mainKey}、${subKey}を往く`,
+      `${mainKey}と挑む${thirdKey}`,
+      `${mainKey}スタイルは折れない！`,
+      `${subKey}一閃！${mainKey}無双録`,
+      `最強の${mainKey}でダンジョン攻略`,
+      `${mainKey}配信者の日常`,
+    ];
+
+    let templateIdx = 0;
+    while (candidateList.length < 5 && templateIdx < fallbackTemplates.length) {
+      const fallbackTitle = cleanTitleCandidate(fallbackTemplates[templateIdx]);
+      if (fallbackTitle && !candidateList.includes(fallbackTitle)) {
+        candidateList.push(fallbackTitle);
+      }
+      templateIdx++;
     }
 
-    return [`${themes.split(',')[0]}の物語`];
+    return candidateList.slice(0, 5);
   }
 
   /**
