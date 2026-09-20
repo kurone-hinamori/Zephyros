@@ -20,6 +20,7 @@ interface GeneratorViewProps {
   onSaveBibleAndGlossary?: (bible: SettingBible, glossary: Glossary, projectId?: string) => void;
   onSaveEditorLogs?: (logs: string[], projectId?: string) => void;
   onViewManuscript: () => void;
+  onViewPrompt?: () => void;
 }
 
 interface ProjectSession {
@@ -81,6 +82,7 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
   onSaveBibleAndGlossary,
   onSaveEditorLogs,
   onViewManuscript,
+  onViewPrompt,
 }) => {
   const [localNovelData, setLocalNovelData] = useState<NovelData | null>(novelData);
 
@@ -358,6 +360,13 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
 
   // 1. プロット全体生成
   const handleGenerateOutline = async () => {
+    // コンセプト作成有無の厳格バリデーション
+    const hasConcept = Boolean(promptSettings?.storyConcept && promptSettings.storyConcept.trim().length > 0);
+    if (!hasConcept) {
+      alert('【コンセプト未作成エラー】\nプロットを生成する前に、まず「お題・設定」画面で作品コンセプトを作成（またはAIガチャを実行）してください。');
+      if (onViewPrompt) onViewPrompt();
+      return;
+    }
     // 別の作品の生成が進行中の場合はそれを安全に中断
     Object.entries(projectSessions).forEach(([id, s]) => {
       if (id !== projectId && s.isGenerating) {
@@ -486,6 +495,13 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
   // 2. 既にある生成済み原稿を一括スキャンして設定資料集 ＆ 特殊用語辞典へ反映
   // 3. 本文全自動執筆 & 校閲 ＆ 設定資料集・特殊用語自動抽出更新ループ
   const handleStartFullGeneration = async () => {
+    // コンセプト作成有無の厳格バリデーション
+    const hasConcept = Boolean(promptSettings?.storyConcept && promptSettings.storyConcept.trim().length > 0);
+    if (!hasConcept) {
+      alert('【コンセプト未作成エラー】\n執筆を開始する前に、まず「お題・設定」画面で作品コンセプトを作成（またはAIガチャを実行）してください。');
+      if (onViewPrompt) onViewPrompt();
+      return;
+    }
     // 別の作品の生成が進行中の場合はそれを安全に中断
     Object.entries(projectSessions).forEach(([id, s]) => {
       if (id !== projectId && s.isGenerating) {
@@ -936,8 +952,31 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
     setEditorLog((prev) => [...prev, '[システム] 停止シグナルを送信し、OllamaのGPU推論処理を即時に強制切断しました。']);
   };
 
+  const hasConcept = Boolean(promptSettings?.storyConcept && promptSettings.storyConcept.trim().length > 0);
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {!hasConcept && (
+        <div className="bg-amber-950/80 border border-amber-600 text-amber-200 p-4 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg shadow-amber-950/50">
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="w-6 h-6 text-amber-400 shrink-0" />
+            <div>
+              <h4 className="text-sm font-bold text-amber-300">【必須】ストーリーコンセプトが未作成です</h4>
+              <p className="text-xs text-amber-200/90 mt-0.5">
+                プロットの自動生成および執筆を開始するには、まず「お題・設定」画面で作品コンセプトを作成（またはAIガチャを実行）してください。
+              </p>
+            </div>
+          </div>
+          {onViewPrompt && (
+            <button
+              onClick={onViewPrompt}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow whitespace-nowrap cursor-pointer transition-colors"
+            >
+              お題・設定へ移動
+            </button>
+          )}
+        </div>
+      )}
       {/* 画面ヘッダー ＆ コントロールパネル */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>

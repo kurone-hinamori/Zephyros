@@ -1006,6 +1006,10 @@ ${JSON.stringify(draftData, null, 2)}
     initialBible?: SettingBible;
     initialGlossary?: Glossary;
   }> {
+    if (!promptSettings || !promptSettings.storyConcept || !promptSettings.storyConcept.trim()) {
+      throw new Error('ストーリーコンセプトが未設定です。先に「お題・設定」画面で作品コンセプトを作成（またはAIガチャを実行）してください。');
+    }
+
     const targetChapterCount = promptSettings.targetChapterCount || 12;
 
     // --- STEP 1: あらすじ・登場人物・世界観・用語集の基本枠生成 (高速 Call 1) ---
