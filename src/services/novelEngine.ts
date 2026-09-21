@@ -2567,22 +2567,55 @@ ${draftContent.slice(0, 10000)}
       return p1 + 'ゲット';
     });
 
-    // 9. 地の文に挟まったノイズ単語 (get/gett, むget 等) や不要カッコの除去
+    // 10. [object Object] 文字列の強制除去
     clean = clean
       .replace(/(?:get\/gett|get\/get|むget)/gi, '')
       .replace(/[\(（]\s*(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Concept)\s*[\)）]/gi, '')
       .replace(/[\(（]\s*[\)）]/g, '')
+      .replace(/\[object\s+Object\]/gi, '')
       .trim();
 
     return clean;
   }
 
   /**
+   * オブジェクトや配列が渡された場合に [object Object] を回避し、文字列コンテンツを全自動抽出する
+   */
+  public static extractTextFromValue(val: any): string {
+    if (val === null || val === undefined) return '';
+    if (typeof val === 'string') return val.trim();
+    if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+    if (Array.isArray(val)) {
+      return val.map((v) => this.extractTextFromValue(v)).filter(Boolean).join('\n');
+    }
+    if (typeof val === 'object') {
+      if (typeof val.synopsis === 'string') return val.synopsis.trim();
+      if (typeof val.detailedPrompt === 'string') return val.detailedPrompt.trim();
+      if (typeof val.storyConcept === 'string') return val.storyConcept.trim();
+      if (typeof val.description === 'string') return val.description.trim();
+      if (typeof val.summary === 'string') return val.summary.trim();
+      if (typeof val.text === 'string') return val.text.trim();
+      const parts: string[] = [];
+      for (const [, v] of Object.entries(val)) {
+        const text = this.extractTextFromValue(v);
+        if (text && text !== '[object Object]') {
+          parts.push(text);
+        }
+      }
+      return parts.join('\n');
+    }
+    return '';
+  }
+
+  /**
    * JSONやMarkdownコードブロックで汚染されたプロンプトコンセプト文をプレーンテキストに純化
    */
-  public static sanitizePromptConcept(concept: string): string {
+  public static sanitizePromptConcept(concept: any): string {
     if (!concept) return '';
-    let str = concept.trim();
+    if (typeof concept === 'object') {
+      return this.cleanForeignNoiseText(this.extractTextFromValue(concept));
+    }
+    let str = String(concept).trim();
     if (str.includes('```json') || str.includes('```')) {
       str = str.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
     }
@@ -2617,42 +2650,41 @@ ${draftContent.slice(0, 10000)}
 
     if (parsed && typeof parsed === 'object') {
       // 1. storyConcept のキー揺らぎ吸収
-      concept = (
-        parsed.storyConcept ||
-        parsed.story_concept ||
-        parsed.concept ||
-        parsed.catchphrase ||
-        parsed["storyConcept "] ||
-        parsed["メインコンセプト"] ||
-        parsed["キャッチコピー"] ||
-        parsed.title ||
-        ''
-      ).toString().trim();
+      concept = this.extractTextFromValue(
+        parsed.storyConcept ??
+        parsed.story_concept ??
+        parsed.concept ??
+        parsed.catchphrase ??
+        parsed["storyConcept "] ??
+        parsed["メインコンセプト"] ??
+        parsed["キャッチコピー"] ??
+        parsed.title
+      );
 
       // 2. detailedPrompt のキー揺らぎ吸収
-      prompt = (
-        parsed.detailedPrompt ||
-        parsed.detailed_prompt ||
-        parsed.synopsis ||
-        parsed.detailedPromptWay ||
-        parsed["detailedPrompt way"] ||
-        parsed["detailedPrompt "] ||
-        parsed["詳細プロンプト"] ||
-        parsed["あらすじ"] ||
-        parsed["詳細指定"] ||
-        parsed.summary ||
-        parsed.description ||
-        parsed.story ||
-        ''
-      ).toString().trim();
+      prompt = this.extractTextFromValue(
+        parsed.detailedPrompt ??
+        parsed.detailed_prompt ??
+        parsed.synopsis ??
+        parsed.detailedPromptWay ??
+        parsed["detailedPrompt way"] ??
+        parsed["detailedPrompt "] ??
+        parsed["詳細プロンプト"] ??
+        parsed["あらすじ"] ??
+        parsed["詳細指定"] ??
+        parsed.summary ??
+        parsed.description ??
+        parsed.story
+      );
 
       // キーが見つからない場合の柔軟探索
       if (!prompt) {
         for (const [k, v] of Object.entries(parsed)) {
-          if (typeof v === 'string' && v.trim().length > 0) {
+          const textV = this.extractTextFromValue(v);
+          if (textV && textV.length > 0) {
             const lowerK = k.toLowerCase();
-            if ((lowerK.includes('prompt') || lowerK.includes('synopsis') || lowerK.includes('detailed') || lowerK.includes('story') || lowerK.includes('summary') || k.includes('あらすじ') || k.includes('詳細')) && v.trim() !== concept) {
-              prompt = v.trim();
+            if ((lowerK.includes('prompt') || lowerK.includes('synopsis') || lowerK.includes('detailed') || lowerK.includes('story') || lowerK.includes('summary') || k.includes('あらすじ') || k.includes('詳細')) && textV !== concept) {
+              prompt = textV;
               break;
             }
           }
@@ -2663,9 +2695,10 @@ ${draftContent.slice(0, 10000)}
       if (!prompt) {
         let maxLen = 0;
         for (const [k, v] of Object.entries(parsed)) {
-          if (typeof v === 'string' && v.trim().length > maxLen && k !== 'storyConcept' && k !== 'concept' && v.trim() !== concept) {
-            maxLen = v.trim().length;
-            prompt = v.trim();
+          const textV = this.extractTextFromValue(v);
+          if (textV && textV.length > maxLen && k !== 'storyConcept' && k !== 'concept' && textV !== concept) {
+            maxLen = textV.length;
+            prompt = textV;
           }
         }
       }
