@@ -11,14 +11,14 @@ export const DEFAULT_SYSTEM_PROMPTS: SystemPrompts = {
 ・お題キーワードに指定された要素のみを軸にし、キーワードに含まれていないメタ単語（「ガチャ」等）を勝手にストーリーのテーマや作中設定として挿入しないでください。
 ・文章および概念表現は100%自然な日本語（ひらがな・カタカナ・漢字）で記述してください。
 ・アルファベット英単語、英字付き文字化け（例: 「リゲットs」「大パget」「get/gett」等）、英文見出しラベル（「Story Concept:」「Concept:」など）、およびギリシャ文字（Φ、α、β、γ、Ω等）や不自然な記号ノイズを作中設定やコンセプト文言に混ぜることは絶対禁止です。
-・"storyConcept" に「【あらすじ】」や「【メインコンセプト】」などの見出し記号を含めないでください。途中切れのない完成した1文のキャッチコピーにしてください。
-・"detailedPrompt" の本文内に「【あらすじ】」などのラベルヘッダーを含めず、純粋な物語あらすじ（300〜500字程度）のみを出力してください。
+・"storyConcept" に「【あらすじ】」や「【メインコンセプト】」などの見出し記号を含めないでください。途中切れのない完成した1文のキャッチコピー（50字程度）にしてください。
+・"detailedPrompt" に "storyConcept" と同じ文章を出力することは絶対に禁止です。本文内に「【あらすじ】」などのヘッダーラベルを含めず、主人公の背景・目的・展開・結末など具体的な物語あらすじ（300〜500字程度）を記述してください。
 
 必ず以下のJSON形式のみを出力してください。思考プロセス(<think>)や解説、Markdown装飾は含めないでください。
 
 {
-  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。キーワードを自然に組み合わせた完成された1文のキャッチーな文言。英単語・見出し記号禁止）",
-  "detailedPrompt": "詳しく魅力的なあらすじ（300〜500字程度。主人公の設定、舞台、メイン展開など。英単語・見出し記号禁止）"
+  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。完成された1文のキャッチーな文言。英単語・見出し記号禁止）",
+  "detailedPrompt": "詳細なあらすじ（300〜500字程度。主人公の背景、目的、メイン展開など。storyConceptと同一文面は禁止）"
 }`,
 
   generateTitle: `あなたはプロの長編小説編集者・キャッチコピーライターAIです。
@@ -217,14 +217,14 @@ export const R18_SYSTEM_PROMPTS: SystemPrompts = {
 ・お題キーワードに指定された要素のみを軸にし、キーワードに含まれていないメタ単語（「ガチャ」等）を勝手にストーリーのテーマや作中設定として挿入しないでください。
 ・文章および概念表現は100%自然な日本語（ひらがな・カタカナ・漢字）で記述してください。
 ・アルファベット英単語、英字付き文字化け（例: 「リゲットs」「大パget」「get/gett」等）、英文見出しラベル（「Story Concept:」「Concept:」など）、およびギリシャ文字（Φ、α、β、γ、Ω等）や不自然な記号ノイズを作中設定やコンセプト文言に混ぜることは絶対禁止です。
-・"storyConcept" に「【あらすじ】」や「【メインコンセプト】」などの見出し記号を含めないでください。途中切れのない完成した1文のキャッチコピーにしてください。
-・"detailedPrompt" の本文内に「【あらすじ】」などのラベルヘッダーを含めず、純粋な物語あらすじ（300〜500字程度）のみを出力してください。
+・"storyConcept" に「【あらすじ】」や「【メインコンセプト】」などの見出し記号を含めないでください。途中切れのない完成した1文のキャッチコピー（50字程度）にしてください。
+・"detailedPrompt" に "storyConcept" と同じ文章を出力することは絶対に禁止です。本文内に「【あらすじ】」などのヘッダーラベルを含めず、主人公の背景・ヒロインとの関係・性的展開や結末など具体的な物語あらすじ（300〜500字程度）を記述してください。
 
 必ず以下のJSON形式のみを出力してください。思考プロセス(<think>)や解説、Markdown装飾は含めないでください。
 
 {
-  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。成人向け・美少女ファンタジーの魅力を強調した文言。英単語・見出し記号禁止）",
-  "detailedPrompt": "詳しく魅力的なあらすじ（300〜500字程度。成人向け・ファンタジーテーマやヒロインとの関係性、メイン展開を明記。英単語・見出し記号禁止）"
+  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。成人向け・美少女ファンタジーの魅力を強調した1文。英単語・見出し記号禁止）",
+  "detailedPrompt": "詳細なあらすじ（300〜500字程度。主人公・ヒロイン設定、展開などを明記。storyConceptと同一文面は禁止）"
 }`,
 
   generateTitle: `あなたはプロのR-18（成人向け二次元ドリーム文庫風）長編小説編集者・キャッチコピーライターAIです。
@@ -2607,9 +2607,12 @@ ${draftContent.slice(0, 10000)}
       parsed = this.cleanAndParseJson(rawResponse);
     } catch (_) {}
 
+    let concept = '';
+    let prompt = '';
+
     if (parsed && typeof parsed === 'object') {
       // 1. storyConcept のキー揺らぎ吸収
-      let concept = (
+      concept = (
         parsed.storyConcept ||
         parsed.story_concept ||
         parsed.concept ||
@@ -2622,7 +2625,7 @@ ${draftContent.slice(0, 10000)}
       ).toString().trim();
 
       // 2. detailedPrompt のキー揺らぎ吸収
-      let prompt = (
+      prompt = (
         parsed.detailedPrompt ||
         parsed.detailed_prompt ||
         parsed.synopsis ||
@@ -2638,12 +2641,12 @@ ${draftContent.slice(0, 10000)}
         ''
       ).toString().trim();
 
-      // キーが見つからない場合の柔軟探索 (キー名に prompt, synopsis, detailed, あらすじ 等を含むか、100字以上の文字列値)
+      // キーが見つからない場合の柔軟探索
       if (!prompt) {
         for (const [k, v] of Object.entries(parsed)) {
           if (typeof v === 'string' && v.trim().length > 0) {
             const lowerK = k.toLowerCase();
-            if (lowerK.includes('prompt') || lowerK.includes('synopsis') || lowerK.includes('detailed') || lowerK.includes('story') || lowerK.includes('summary') || k.includes('あらすじ') || k.includes('詳細')) {
+            if ((lowerK.includes('prompt') || lowerK.includes('synopsis') || lowerK.includes('detailed') || lowerK.includes('story') || lowerK.includes('summary') || k.includes('あらすじ') || k.includes('詳細')) && v.trim() !== concept) {
               prompt = v.trim();
               break;
             }
@@ -2651,65 +2654,73 @@ ${draftContent.slice(0, 10000)}
         }
       }
 
-      // なおも見つからない場合、100文字以上の最長文字列値を detailedPrompt とする
+      // なおも見つからない場合、concept とは異なる 50文字以上の最長文字列を detailedPrompt とする
       if (!prompt) {
         let maxLen = 0;
         for (const [k, v] of Object.entries(parsed)) {
-          if (typeof v === 'string' && v.trim().length > maxLen && k !== 'storyConcept') {
+          if (typeof v === 'string' && v.trim().length > maxLen && k !== 'storyConcept' && k !== 'concept' && v.trim() !== concept) {
             maxLen = v.trim().length;
             prompt = v.trim();
           }
         }
       }
+    }
 
-      const cleanedPrompt = this.cleanForeignNoiseText(prompt) || this.cleanForeignNoiseText(rawResponse);
+    // クレンジング処理
+    let cleanedConcept = this.cleanForeignNoiseText(this.sanitizePromptConcept(concept));
+    let cleanedPrompt = prompt ? this.cleanForeignNoiseText(prompt) : '';
 
-      if (!concept && cleanedPrompt) {
-        const sentenceMatch = cleanedPrompt.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
-        concept = sentenceMatch ? sentenceMatch[1] : cleanedPrompt.slice(0, 50).replace(/[\r\n]+/g, ' ');
+    // 生文字列から JSON マークダウン等のノイズを除去したテキスト
+    let rawTextClean = rawResponse
+      .replace(/```(?:json)?[\s\S]*?```/gi, '')
+      .replace(/\{[\s\S]*?\}/g, '')
+      .replace(/```(?:json)?/gi, '')
+      .replace(/```/g, '')
+      .trim();
+    rawTextClean = this.cleanForeignNoiseText(rawTextClean);
+
+    // 正規表現による救出 (生のJSON文字から)
+    if (!cleanedConcept || !cleanedPrompt) {
+      const conceptMatch = rawResponse.match(/"storyConcept"\s*:\s*"([^"]+)"/i) || rawResponse.match(/"concept"\s*:\s*"([^"]+)"/i);
+      const promptMatch = rawResponse.match(/"detailedPrompt[^"]*"\s*:\s*"([^"]+)"/i) || rawResponse.match(/"synopsis"\s*:\s*"([^"]+)"/i);
+
+      if (!cleanedConcept && conceptMatch) {
+        cleanedConcept = this.cleanForeignNoiseText(conceptMatch[1].replace(/\\n/g, ' '));
       }
-
-      let cleanedConcept = this.cleanForeignNoiseText(this.sanitizePromptConcept(concept));
-      if (!cleanedConcept || cleanedConcept.startsWith('【')) {
-        const sentenceMatch = cleanedPrompt.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
-        cleanedConcept = sentenceMatch ? sentenceMatch[1] : (cleanedPrompt.slice(0, 50).replace(/[\r\n]+/g, ' ') || fallbackTitle);
-      }
-
-      if (cleanedConcept || cleanedPrompt) {
-        return {
-          storyConcept: cleanedConcept || fallbackTitle,
-          detailedPrompt: cleanedPrompt,
-        };
+      if (!cleanedPrompt && promptMatch) {
+        const candidateP = this.cleanForeignNoiseText(promptMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"'));
+        if (candidateP !== cleanedConcept) {
+          cleanedPrompt = candidateP;
+        }
       }
     }
 
-    // JSONオブジェクトとして抽出できなかった場合のプレーンテキストパース
-    let cleanText = rawResponse.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
-
-    // {"storyConcept": "...", "detailedPrompt": "..."} のような生文字列からの正規表現レスキュー
-    const conceptMatch = cleanText.match(/"storyConcept"\s*:\s*"([^"]+)"/i) || cleanText.match(/"concept"\s*:\s*"([^"]+)"/i);
-    const promptMatch = cleanText.match(/"detailedPrompt[^"]*"\s*:\s*"([^"]+)"/i) || cleanText.match(/"synopsis"\s*:\s*"([^"]+)"/i);
-
-    if (conceptMatch || promptMatch) {
-      const p = promptMatch ? promptMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : cleanText;
-      const cleanedP = this.cleanForeignNoiseText(p);
-      let c = conceptMatch ? conceptMatch[1].replace(/\\n/g, ' ') : '';
-      let cleanedC = this.cleanForeignNoiseText(c);
-      if (!cleanedC) {
-        const sentenceMatch = cleanedP.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
-        cleanedC = sentenceMatch ? sentenceMatch[1] : (cleanedP.slice(0, 50).replace(/[\r\n]+/g, ' ') || fallbackTitle);
-      }
-      return {
-        storyConcept: cleanedC || fallbackTitle,
-        detailedPrompt: cleanedP,
-      };
+    // 概念が取れていて、プロンプトが取れておらず、生テキストに残りの文章がある場合
+    if (!cleanedPrompt && rawTextClean && rawTextClean !== cleanedConcept) {
+      cleanedPrompt = rawTextClean;
     }
 
-    const cleanedCleanText = this.cleanForeignNoiseText(cleanText);
-    const sentenceMatch = cleanedCleanText.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
+    // 逆に概念が空でプロンプトがある場合
+    if (!cleanedConcept && cleanedPrompt) {
+      const sentenceMatch = cleanedPrompt.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
+      cleanedConcept = sentenceMatch ? sentenceMatch[1] : cleanedPrompt.slice(0, 50).replace(/[\r\n]+/g, ' ');
+    }
+
+    // 両方が空で生テキストがある場合
+    if (!cleanedConcept && !cleanedPrompt && rawTextClean) {
+      const sentenceMatch = rawTextClean.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
+      cleanedConcept = sentenceMatch ? sentenceMatch[1] : rawTextClean.slice(0, 50).replace(/[\r\n]+/g, ' ');
+      cleanedPrompt = rawTextClean;
+    }
+
+    // 万が一、両者が同一テキストになってしまった場合の重複補正
+    if (cleanedConcept && cleanedPrompt === cleanedConcept) {
+      cleanedPrompt = `${cleanedConcept}\n\n（※あらすじ詳細展開：主人公の設定・目的、舞台、メイン展開を軸にストーリーが展開します。）`;
+    }
+
     return {
-      storyConcept: sentenceMatch ? sentenceMatch[1] : (cleanedCleanText.slice(0, 50).replace(/[\r\n]+/g, ' ') || fallbackTitle),
-      detailedPrompt: cleanedCleanText,
+      storyConcept: cleanedConcept || fallbackTitle,
+      detailedPrompt: cleanedPrompt || cleanedConcept || fallbackTitle,
     };
   }
 
