@@ -10,13 +10,15 @@ export const DEFAULT_SYSTEM_PROMPTS: SystemPrompts = {
 【重要制約】
 ・お題キーワードに指定された要素のみを軸にし、キーワードに含まれていないメタ単語（「ガチャ」等）を勝手にストーリーのテーマや作中設定として挿入しないでください。
 ・文章および概念表現は100%自然な日本語（ひらがな・カタカナ・漢字）で記述してください。
-・アルファベット英単語、英文見出しラベル（「Story Concept:」「Concept:」など）、およびギリシャ文字（Φ、α、β、γ、Ω等）や不自然な記号ノイズを作中設定やコンセプト文言に混ぜることは固く禁止します。
+・アルファベット英単語、英字付き文字化け（例: 「リゲットs」「大パget」「get/gett」等）、英文見出しラベル（「Story Concept:」「Concept:」など）、およびギリシャ文字（Φ、α、β、γ、Ω等）や不自然な記号ノイズを作中設定やコンセプト文言に混ぜることは絶対禁止です。
+・"storyConcept" に「【あらすじ】」や「【メインコンセプト】」などの見出し記号を含めないでください。途中切れのない完成した1文のキャッチコピーにしてください。
+・"detailedPrompt" の本文内に「【あらすじ】」などのラベルヘッダーを含めず、純粋な物語あらすじ（300〜500字程度）のみを出力してください。
 
 必ず以下のJSON形式のみを出力してください。思考プロセス(<think>)や解説、Markdown装飾は含めないでください。
 
 {
-  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。キーワードを自然に組み合わせたキャッチーな文言。英単語・ギリシャ文字・記号ノイズ禁止）",
-  "detailedPrompt": "【あらすじ】\\nから始まる詳しく魅力的なあらすじ（300〜500字程度。主人公の設定、舞台、メイン展開など。英単語・ギリシャ文字ノイズ禁止）"
+  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。キーワードを自然に組み合わせた完成された1文のキャッチーな文言。英単語・見出し記号禁止）",
+  "detailedPrompt": "詳しく魅力的なあらすじ（300〜500字程度。主人公の設定、舞台、メイン展開など。英単語・見出し記号禁止）"
 }`,
 
   generateTitle: `あなたはプロの長編小説編集者・キャッチコピーライターAIです。
@@ -214,13 +216,15 @@ export const R18_SYSTEM_PROMPTS: SystemPrompts = {
 【重要制約】
 ・お題キーワードに指定された要素のみを軸にし、キーワードに含まれていないメタ単語（「ガチャ」等）を勝手にストーリーのテーマや作中設定として挿入しないでください。
 ・文章および概念表現は100%自然な日本語（ひらがな・カタカナ・漢字）で記述してください。
-・アルファベット英単語、英文見出しラベル（「Story Concept:」「Concept:」など）、およびギリシャ文字（Φ、α、β、γ、Ω等）や不自然な記号ノイズを作中設定やコンセプト文言に混ぜることは固く禁止します。
+・アルファベット英単語、英字付き文字化け（例: 「リゲットs」「大パget」「get/gett」等）、英文見出しラベル（「Story Concept:」「Concept:」など）、およびギリシャ文字（Φ、α、β、γ、Ω等）や不自然な記号ノイズを作中設定やコンセプト文言に混ぜることは絶対禁止です。
+・"storyConcept" に「【あらすじ】」や「【メインコンセプト】」などの見出し記号を含めないでください。途中切れのない完成した1文のキャッチコピーにしてください。
+・"detailedPrompt" の本文内に「【あらすじ】」などのラベルヘッダーを含めず、純粋な物語あらすじ（300〜500字程度）のみを出力してください。
 
 必ず以下のJSON形式のみを出力してください。思考プロセス(<think>)や解説、Markdown装飾は含めないでください。
 
 {
-  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。成人向け・美少女ファンタジーの魅力を強調した文言。英単語・ギリシャ文字・記号ノイズ禁止）",
-  "detailedPrompt": "【あらすじ】\\nから始まる詳しく魅力的なあらすじ（300〜500字程度。成人向け・ファンタジーテーマやヒロインとの関係性、メイン展開を明記。英単語・ギリシャ文字ノイズ禁止）"
+  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。成人向け・美少女ファンタジーの魅力を強調した文言。英単語・見出し記号禁止）",
+  "detailedPrompt": "詳しく魅力的なあらすじ（300〜500字程度。成人向け・ファンタジーテーマやヒロインとの関係性、メイン展開を明記。英単語・見出し記号禁止）"
 }`,
 
   generateTitle: `あなたはプロのR-18（成人向け二次元ドリーム文庫風）長編小説編集者・キャッチコピーライターAIです。
@@ -2522,14 +2526,20 @@ ${draftContent.slice(0, 10000)}
     if (!text) return '';
     let clean = text.trim();
 
-    // 1. メタ英単語ラベルの見出し（「Story Concept:」「Detailed Prompt:」等）の除去
-    clean = clean.replace(/^(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Main\s*Concept|Summary|Description|Catchphrase|Concept|Title)[：:\s]*/gi, '');
-    clean = clean.replace(/(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Main\s*Concept|Catchphrase)[：:\s]*/gi, '');
+    // 1. メタ英単語・日本語ラベルの見出し（「Story Concept:」「【あらすじ】」等）の除去
+    clean = clean.replace(/^(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Main\s*Concept|Summary|Description|Catchphrase|Concept|Title|【あらすじ】|【メインコンセプト】|【キャッチコピー】|【詳細プロンプt?】|あらすじ[：:]?|メインコンセプト[：:]?)[：:\s\n]*/gi, '');
+    clean = clean.replace(/(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Main\s*Concept|Catchphrase|【あらすじ】|【メインコンセプト】|【キャッチコピー】)[：:\s]*/gi, '');
 
     // 2. ギリシャ文字（Φ、Α〜Ω、α〜ω）や不要な記号ノイズの除去
     clean = clean.replace(/[ΦΑ-Ωα-ω]+/g, '');
 
-    // 3. LLMトークナイザーの文字化け・誤置換（Katakana + "get" / "gett" 破壊単語の自動修復）
+    // 3. LLMトークナイザーの誤構文・文字化け修復（カタカナ+英字 (本名) パターン）
+    // 例: 「リゲットs（リリス）」 -> 「リリス」
+    clean = clean.replace(/([ァ-ヴー]+[a-zA-Z]+)[\(（]([ァ-ヴー一-龠ぁ-ん]+)[\)）]/g, '$2');
+    // 例: 「リゲットs」 -> 「リゲット」 (末尾の孤立ASCII文字を除去)
+    clean = clean.replace(/([ァ-ヴー]{2,})[a-zA-Z]\b/g, '$1');
+
+    // 4. Katakana + "get" / "gett" 破壊単語の自動修復
     // 例: 「大パget！」 -> 「大パニック！」「パget」 -> 「パニック」
     clean = clean.replace(/大パ\s*get[!！]?/gi, '大パニック！');
     clean = clean.replace(/パ\s*get/gi, 'パニック');
@@ -2541,7 +2551,7 @@ ${draftContent.slice(0, 10000)}
     clean = clean.replace(/（\s*む\s*get\s*）|[\(（]\s*get(?:\/gett|\/get)*\s*[\)）]/gi, '');
     clean = clean.replace(/get（[^）]+）/gi, '');
 
-    // 4. カタカナ + get の汎用補正
+    // 5. カタカナ + get の汎用補正
     clean = clean.replace(/([ァ-ヴー]+)get/gi, (_m, p1) => {
       if (p1 === 'パ' || p1 === '大パ') return 'パニック';
       if (p1 === 'ター' || p1 === 'タ') return 'ターゲット';
@@ -2552,7 +2562,7 @@ ${draftContent.slice(0, 10000)}
       return p1 + 'ゲット';
     });
 
-    // 5. 地の文に挟まったノイズ単語 (get/gett, むget 等) や不要カッコの除去
+    // 6. 地の文に挟まったノイズ単語 (get/gett, むget 等) や不要カッコの除去
     clean = clean
       .replace(/(?:get\/gett|get\/get|むget)/gi, '')
       .replace(/[\(（]\s*(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Concept)\s*[\)）]/gi, '')
@@ -2652,14 +2662,23 @@ ${draftContent.slice(0, 10000)}
         }
       }
 
-      if (!concept && prompt) {
-        concept = prompt.slice(0, 50).replace(/[\r\n]+/g, ' ');
+      const cleanedPrompt = this.cleanForeignNoiseText(prompt) || this.cleanForeignNoiseText(rawResponse);
+
+      if (!concept && cleanedPrompt) {
+        const sentenceMatch = cleanedPrompt.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
+        concept = sentenceMatch ? sentenceMatch[1] : cleanedPrompt.slice(0, 50).replace(/[\r\n]+/g, ' ');
       }
 
-      if (concept || prompt) {
+      let cleanedConcept = this.cleanForeignNoiseText(this.sanitizePromptConcept(concept));
+      if (!cleanedConcept || cleanedConcept.startsWith('【')) {
+        const sentenceMatch = cleanedPrompt.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
+        cleanedConcept = sentenceMatch ? sentenceMatch[1] : (cleanedPrompt.slice(0, 50).replace(/[\r\n]+/g, ' ') || fallbackTitle);
+      }
+
+      if (cleanedConcept || cleanedPrompt) {
         return {
-          storyConcept: this.cleanForeignNoiseText(this.sanitizePromptConcept(concept)) || fallbackTitle,
-          detailedPrompt: this.cleanForeignNoiseText(prompt) || rawResponse,
+          storyConcept: cleanedConcept || fallbackTitle,
+          detailedPrompt: cleanedPrompt,
         };
       }
     }
@@ -2672,15 +2691,25 @@ ${draftContent.slice(0, 10000)}
     const promptMatch = cleanText.match(/"detailedPrompt[^"]*"\s*:\s*"([^"]+)"/i) || cleanText.match(/"synopsis"\s*:\s*"([^"]+)"/i);
 
     if (conceptMatch || promptMatch) {
+      const p = promptMatch ? promptMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : cleanText;
+      const cleanedP = this.cleanForeignNoiseText(p);
+      let c = conceptMatch ? conceptMatch[1].replace(/\\n/g, ' ') : '';
+      let cleanedC = this.cleanForeignNoiseText(c);
+      if (!cleanedC) {
+        const sentenceMatch = cleanedP.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
+        cleanedC = sentenceMatch ? sentenceMatch[1] : (cleanedP.slice(0, 50).replace(/[\r\n]+/g, ' ') || fallbackTitle);
+      }
       return {
-        storyConcept: conceptMatch ? this.cleanForeignNoiseText(conceptMatch[1].replace(/\\n/g, ' ')) : fallbackTitle,
-        detailedPrompt: promptMatch ? this.cleanForeignNoiseText(promptMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')) : this.cleanForeignNoiseText(cleanText),
+        storyConcept: cleanedC || fallbackTitle,
+        detailedPrompt: cleanedP,
       };
     }
 
+    const cleanedCleanText = this.cleanForeignNoiseText(cleanText);
+    const sentenceMatch = cleanedCleanText.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
     return {
-      storyConcept: this.cleanForeignNoiseText(cleanText.slice(0, 50).replace(/[\r\n]+/g, ' ')),
-      detailedPrompt: this.cleanForeignNoiseText(cleanText),
+      storyConcept: sentenceMatch ? sentenceMatch[1] : (cleanedCleanText.slice(0, 50).replace(/[\r\n]+/g, ' ') || fallbackTitle),
+      detailedPrompt: cleanedCleanText,
     };
   }
 
