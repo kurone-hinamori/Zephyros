@@ -2515,7 +2515,8 @@ ${draftContent.slice(0, 10000)}
   }
 
   /**
-   * コンセプト文やあらすじ等に含まれる不必要な英単語ラベル、メタ見出し、ギリシャ文字（Φ、α、β等）をクレンジングする
+   * コンセプト文やあらすじ等に含まれる不必要な英単語ラベル、メタ見出し、ギリシャ文字（Φ、α、β等）、
+   * およびLLMトークナイザーの文字化け（「大パget」->「大パニック」等）を自動クレンジング・修正する
    */
   public static cleanForeignNoiseText(text: string): string {
     if (!text) return '';
@@ -2528,8 +2529,32 @@ ${draftContent.slice(0, 10000)}
     // 2. ギリシャ文字（Φ、Α〜Ω、α〜ω）や不要な記号ノイズの除去
     clean = clean.replace(/[ΦΑ-Ωα-ω]+/g, '');
 
-    // 3. 連続する不要なカッコ記号や不自然な英字ノイズの除去
+    // 3. LLMトークナイザーの文字化け・誤置換（Katakana + "get" / "gett" 破壊単語の自動修復）
+    // 例: 「大パget！」 -> 「大パニック！」「パget」 -> 「パニック」
+    clean = clean.replace(/大パ\s*get[!！]?/gi, '大パニック！');
+    clean = clean.replace(/パ\s*get/gi, 'パニック');
+    clean = clean.replace(/ター\s*get|タ\s*get/gi, 'ターゲット');
+    clean = clean.replace(/チ\s*get/gi, 'チケット');
+    clean = clean.replace(/ロケ\s*get/gi, 'ロケット');
+    clean = clean.replace(/ジャ\s*get/gi, 'ジャケット');
+    clean = clean.replace(/バ\s*get/gi, 'バット');
+    clean = clean.replace(/（\s*む\s*get\s*）|[\(（]\s*get(?:\/gett|\/get)*\s*[\)）]/gi, '');
+    clean = clean.replace(/get（[^）]+）/gi, '');
+
+    // 4. カタカナ + get の汎用補正
+    clean = clean.replace(/([ァ-ヴー]+)get/gi, (_m, p1) => {
+      if (p1 === 'パ' || p1 === '大パ') return 'パニック';
+      if (p1 === 'ター' || p1 === 'タ') return 'ターゲット';
+      if (p1 === 'チ') return 'チケット';
+      if (p1 === 'ロケ') return 'ロケット';
+      if (p1 === 'ジャ') return 'ジャケット';
+      if (p1 === 'バ') return 'バット';
+      return p1 + 'ゲット';
+    });
+
+    // 5. 地の文に挟まったノイズ単語 (get/gett, むget 等) や不要カッコの除去
     clean = clean
+      .replace(/(?:get\/gett|get\/get|むget)/gi, '')
       .replace(/[\(（]\s*(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Concept)\s*[\)）]/gi, '')
       .replace(/[\(（]\s*[\)）]/g, '')
       .trim();
