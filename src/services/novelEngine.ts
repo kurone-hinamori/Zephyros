@@ -2533,8 +2533,8 @@ ${draftContent.slice(0, 10000)}
     // 2. ギリシャ文字（Φ、Α〜Ω、α〜ω）や記号ノイズの除去
     clean = clean.replace(/[ΦΑ-Ωα-ω]+/g, '');
 
-    // 3. 直接的な崩壊トークン「リゲット」「リゲットs」の自動修復（「リリス」へ置換）
-    clean = clean.replace(/リゲット[a-zA-Z]*/g, 'リリス');
+    // 3. 地の文に挟まる不要な浮遊英単語（例: heavy, casual, oversized, enjoy）の除去
+    clean = clean.replace(/\b(?:heavy|casual|oversized|stylish|cool|enjoy)\b\s*/gi, '');
 
     // 4. 日本語単語 + ASCII文字（例: 「リリスs」「姫様s」）の末尾英字除去（Unicode安全判定）
     clean = clean.replace(/([ァ-ヴー一-龠ぁ-ん]{2,})[a-zA-Z]+(?=[^a-zA-Z]|$)/g, '$1');
@@ -2556,24 +2556,28 @@ ${draftContent.slice(0, 10000)}
     clean = clean.replace(/（\s*む\s*get\s*）|[\(（]\s*get(?:\/gett|\/get)*\s*[\)）]/gi, '');
     clean = clean.replace(/get（[^）]+）/gi, '');
 
-    // 8. カタカナ + get の汎用補正
-    clean = clean.replace(/([ァ-ヴー]+)get/gi, (_m, p1) => {
+    // 8. カタカナ + get の汎用補正（「リget」→「リリス」の補正含む）
+    clean = clean.replace(/([ァ-ヴー]+)get[a-zA-Z]*/gi, (_m, p1) => {
       if (p1 === 'パ' || p1 === '大パ') return 'パニック';
       if (p1 === 'ター' || p1 === 'タ') return 'ターゲット';
       if (p1 === 'チ') return 'チケット';
       if (p1 === 'ロケ') return 'ロケット';
       if (p1 === 'ジャ') return 'ジャケット';
       if (p1 === 'バ') return 'バット';
+      if (p1 === 'リ' || p1 === 'リリ') return 'リリス';
       return p1 + 'ゲット';
     });
 
-    // 10. [object Object] 文字列の強制除去
+    // 9. 地の文に挟まったノイズ単語 (get/gett, むget 等) や不要カッコの除去
     clean = clean
       .replace(/(?:get\/gett|get\/get|むget)/gi, '')
       .replace(/[\(（]\s*(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Concept)\s*[\)）]/gi, '')
       .replace(/[\(（]\s*[\)）]/g, '')
       .replace(/\[object\s+Object\]/gi, '')
       .trim();
+
+    // 10. 【最終サニタイズ】LLMトークナイザーの「リリス」崩壊トークン（「リゲット」「リゲットs」等）を絶対確定で「リリス」へと置換
+    clean = clean.replace(/リゲット[a-zA-Z]*/g, 'リリス');
 
     return clean;
   }
