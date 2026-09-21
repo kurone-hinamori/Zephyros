@@ -9,12 +9,14 @@ export const DEFAULT_SYSTEM_PROMPTS: SystemPrompts = {
 
 【重要制約】
 ・お題キーワードに指定された要素のみを軸にし、キーワードに含まれていないメタ単語（「ガチャ」等）を勝手にストーリーのテーマや作中設定として挿入しないでください。
+・文章および概念表現は100%自然な日本語（ひらがな・カタカナ・漢字）で記述してください。
+・アルファベット英単語、英文見出しラベル（「Story Concept:」「Concept:」など）、およびギリシャ文字（Φ、α、β、γ、Ω等）や不自然な記号ノイズを作中設定やコンセプト文言に混ぜることは固く禁止します。
 
 必ず以下のJSON形式のみを出力してください。思考プロセス(<think>)や解説、Markdown装飾は含めないでください。
 
 {
-  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。キーワードを自然に組み合わせたキャッチーな文言）",
-  "detailedPrompt": "【あらすじ】\\nから始まる詳しく魅力的なあらすじ（300〜500字程度。主人公の設定、舞台、メイン展開など）"
+  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。キーワードを自然に組み合わせたキャッチーな文言。英単語・ギリシャ文字・記号ノイズ禁止）",
+  "detailedPrompt": "【あらすじ】\\nから始まる詳しく魅力的なあらすじ（300〜500字程度。主人公の設定、舞台、メイン展開など。英単語・ギリシャ文字ノイズ禁止）"
 }`,
 
   generateTitle: `あなたはプロの長編小説編集者・キャッチコピーライターAIです。
@@ -211,12 +213,14 @@ export const R18_SYSTEM_PROMPTS: SystemPrompts = {
 
 【重要制約】
 ・お題キーワードに指定された要素のみを軸にし、キーワードに含まれていないメタ単語（「ガチャ」等）を勝手にストーリーのテーマや作中設定として挿入しないでください。
+・文章および概念表現は100%自然な日本語（ひらがな・カタカナ・漢字）で記述してください。
+・アルファベット英単語、英文見出しラベル（「Story Concept:」「Concept:」など）、およびギリシャ文字（Φ、α、β、γ、Ω等）や不自然な記号ノイズを作中設定やコンセプト文言に混ぜることは固く禁止します。
 
 必ず以下のJSON形式のみを出力してください。思考プロセス(<think>)や解説、Markdown装飾は含めないでください。
 
 {
-  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。成人向け・美少女ファンタジーの魅力を強調した文言）",
-  "detailedPrompt": "【あらすじ】\\nから始まる詳しく魅力的なあらすじ（300〜500字程度。成人向け・ファンタジーテーマやヒロインとの関係性、メイン展開を明記）"
+  "storyConcept": "メインコンセプト・キャッチコピー（50字程度。成人向け・美少女ファンタジーの魅力を強調した文言。英単語・ギリシャ文字・記号ノイズ禁止）",
+  "detailedPrompt": "【あらすじ】\\nから始まる詳しく魅力的なあらすじ（300〜500字程度。成人向け・ファンタジーテーマやヒロインとの関係性、メイン展開を明記。英単語・ギリシャ文字ノイズ禁止）"
 }`,
 
   generateTitle: `あなたはプロのR-18（成人向け二次元ドリーム文庫風）長編小説編集者・キャッチコピーライターAIです。
@@ -2511,6 +2515,29 @@ ${draftContent.slice(0, 10000)}
   }
 
   /**
+   * コンセプト文やあらすじ等に含まれる不必要な英単語ラベル、メタ見出し、ギリシャ文字（Φ、α、β等）をクレンジングする
+   */
+  public static cleanForeignNoiseText(text: string): string {
+    if (!text) return '';
+    let clean = text.trim();
+
+    // 1. メタ英単語ラベルの見出し（「Story Concept:」「Detailed Prompt:」等）の除去
+    clean = clean.replace(/^(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Main\s*Concept|Summary|Description|Catchphrase|Concept|Title)[：:\s]*/gi, '');
+    clean = clean.replace(/(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Main\s*Concept|Catchphrase)[：:\s]*/gi, '');
+
+    // 2. ギリシャ文字（Φ、Α〜Ω、α〜ω）や不要な記号ノイズの除去
+    clean = clean.replace(/[ΦΑ-Ωα-ω]+/g, '');
+
+    // 3. 連続する不要なカッコ記号や不自然な英字ノイズの除去
+    clean = clean
+      .replace(/[\(（]\s*(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Concept)\s*[\)）]/gi, '')
+      .replace(/[\(（]\s*[\)）]/g, '')
+      .trim();
+
+    return clean;
+  }
+
+  /**
    * JSONやMarkdownコードブロックで汚染されたプロンプトコンセプト文をプレーンテキストに純化
    */
   public static sanitizePromptConcept(concept: string): string {
@@ -2527,7 +2554,7 @@ ${draftContent.slice(0, 10000)}
         if (parsed.detailedPrompt) return this.sanitizePromptConcept(parsed.detailedPrompt);
       } catch {}
     }
-    return str;
+    return this.cleanForeignNoiseText(str);
   }
 
   /**
@@ -2606,8 +2633,8 @@ ${draftContent.slice(0, 10000)}
 
       if (concept || prompt) {
         return {
-          storyConcept: this.sanitizePromptConcept(concept) || fallbackTitle,
-          detailedPrompt: prompt || rawResponse,
+          storyConcept: this.cleanForeignNoiseText(this.sanitizePromptConcept(concept)) || fallbackTitle,
+          detailedPrompt: this.cleanForeignNoiseText(prompt) || rawResponse,
         };
       }
     }
@@ -2621,14 +2648,14 @@ ${draftContent.slice(0, 10000)}
 
     if (conceptMatch || promptMatch) {
       return {
-        storyConcept: conceptMatch ? conceptMatch[1].replace(/\\n/g, ' ') : fallbackTitle,
-        detailedPrompt: promptMatch ? promptMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : cleanText,
+        storyConcept: conceptMatch ? this.cleanForeignNoiseText(conceptMatch[1].replace(/\\n/g, ' ')) : fallbackTitle,
+        detailedPrompt: promptMatch ? this.cleanForeignNoiseText(promptMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')) : this.cleanForeignNoiseText(cleanText),
       };
     }
 
     return {
-      storyConcept: cleanText.slice(0, 50).replace(/[\r\n]+/g, ' '),
-      detailedPrompt: cleanText,
+      storyConcept: this.cleanForeignNoiseText(cleanText.slice(0, 50).replace(/[\r\n]+/g, ' ')),
+      detailedPrompt: this.cleanForeignNoiseText(cleanText),
     };
   }
 
