@@ -1131,7 +1131,9 @@ ${JSON.stringify(draftData, null, 2)}
     }
     step1Parsed.title = cleanTitle;
 
-    // 登場人物不足時のフェールセーフ（プロンプトからの性別・役職・背景動的解析）
+    // 登場人物の重複登録の排除・フェールセーフ
+    rawChars = NovelEngine.deduplicateCharacters(rawChars);
+
     if (rawChars.length < 2) {
       const inferred = NovelEngine.inferCharactersFromPrompt(promptSettings);
       if (rawChars.length === 0) {
@@ -1143,6 +1145,7 @@ ${JSON.stringify(draftData, null, 2)}
           }
         });
       }
+      rawChars = NovelEngine.deduplicateCharacters(rawChars);
     }
 
     // ゴミ設定・メタ項目の事前フィルタリング
@@ -1240,43 +1243,45 @@ ${JSON.stringify(draftData, null, 2)}
     }
 
     const initialBible: SettingBible = {
-      characters: rawChars.map((c: any, idx: number) => {
-        let { cleanName, extractedRole } = NovelEngine.sanitizeCharacterName(c.name || `登場人物${idx + 1}`);
-        const role = c.role || extractedRole || '主要人物';
-        let appearance = c.appearance && !NovelEngine.isSynopsisCopy(c.appearance, promptSettings, step1Parsed.synopsis)
-          ? c.appearance
-          : `「${cleanName}」の外見・容姿特徴`;
-        let background = c.background && !NovelEngine.isSynopsisCopy(c.background, promptSettings, step1Parsed.synopsis)
-          ? c.background
-          : `「${cleanName}」の作中における人物背景・目的`;
+      characters: NovelEngine.deduplicateCharacters(
+        rawChars.map((c: any, idx: number) => {
+          let { cleanName, extractedRole } = NovelEngine.sanitizeCharacterName(c.name || `登場人物${idx + 1}`);
+          const role = c.role || extractedRole || '主要人物';
+          let appearance = c.appearance && !NovelEngine.isSynopsisCopy(c.appearance, promptSettings, step1Parsed.synopsis)
+            ? c.appearance
+            : `「${cleanName}」の外見・容姿特徴`;
+          let background = c.background && !NovelEngine.isSynopsisCopy(c.background, promptSettings, step1Parsed.synopsis)
+            ? c.background
+            : `「${cleanName}」の作中における人物背景・目的`;
 
-        // お題・あらすじに指定されていない無関係なキーワード (サキュバス等) が全年齢作品に誤混入した場合のクレンジング
-        const promptFullText = `${promptSettings.storyConcept} ${promptSettings.detailedPrompt} ${promptSettings.themes.join(' ')}`;
-        if (promptSettings.rating !== 'r18' && !promptFullText.includes('サキュバス')) {
-          cleanName = cleanName.replace(/サキュバスの?/g, '').trim() || '主人公の少女';
-          appearance = appearance.replace(/サキュバスの?/g, '').trim();
-        }
+          // お題・あらすじに指定されていない無関係なキーワード (サキュバス等) が全年齢作品に誤混入した場合のクレンジング
+          const promptFullText = `${promptSettings.storyConcept} ${promptSettings.detailedPrompt} ${promptSettings.themes.join(' ')}`;
+          if (promptSettings.rating !== 'r18' && !promptFullText.includes('サキュバス')) {
+            cleanName = cleanName.replace(/サキュバスの?/g, '').trim() || '主人公の少女';
+            appearance = appearance.replace(/サキュバスの?/g, '').trim();
+          }
 
-        const illustrationPrompt = NovelEngine.buildIllustrationPrompt({
-          name: cleanName,
-          appearance,
-          role,
-          illustrationPrompt: c.illustrationPrompt,
-        });
-        return {
-          id: `char-init-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 4)}`,
-          name: cleanName,
-          ruby: NovelEngine.toHiragana(c.ruby || ''),
-          role,
-          firstPerson: NovelEngine.sanitizePronoun(c.firstPerson, '私', false),
-          secondPerson: NovelEngine.sanitizePronoun(c.secondPerson, 'あなた', true),
-          appearance,
-          personality: c.personality || '初期プロットにて設定',
-          background,
-          illustrationPrompt,
-          updatedEpisode: '【初期プロット策定時】',
-        };
-      }),
+          const illustrationPrompt = NovelEngine.buildIllustrationPrompt({
+            name: cleanName,
+            appearance,
+            role,
+            illustrationPrompt: c.illustrationPrompt,
+          });
+          return {
+            id: `char-init-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 4)}`,
+            name: cleanName,
+            ruby: NovelEngine.toHiragana(c.ruby || ''),
+            role,
+            firstPerson: NovelEngine.sanitizePronoun(c.firstPerson, '私', false),
+            secondPerson: NovelEngine.sanitizePronoun(c.secondPerson, 'あなた', true),
+            appearance,
+            personality: c.personality || '初期プロットにて設定',
+            background,
+            illustrationPrompt,
+            updatedEpisode: '【初期プロット策定時】',
+          };
+        })
+      ),
       worldBuilding: rawWorld.map((w: any, idx: number) => {
         const title = (w.title || w.name || `設定${idx + 1}`).trim();
         let content = (w.content || w.description || '').trim();
@@ -2961,6 +2966,131 @@ ${draftContent.slice(0, 10000)}
   }
 
   /**
+   * 登場人物（キャラクター）の重複登録を排除・マージする
+   * - 完全一致（名前、ルビ）
+   * - 略称・フルネーム・姓・名などの包摂関係（例: 「リナ・スウィート」と「リナ」）
+   */
+  public static deduplicateCharacters<T extends { name: string; ruby?: string; role?: string; appearance?: string; personality?: string; background?: string; firstPerson?: string; secondPerson?: string; illustrationPrompt?: string }>(chars: T[]): T[] {
+    if (!Array.isArray(chars) || chars.length === 0) return [];
+
+    const result: T[] = [];
+
+    chars.forEach((c) => {
+      if (!c || !c.name || !c.name.trim()) return;
+
+      const { cleanName, extractedRole } = NovelEngine.sanitizeCharacterName(c.name);
+      const name = cleanName.trim();
+      if (!name || NovelEngine.isJunkTitle(name)) return;
+
+      const ruby = NovelEngine.toHiragana((c.ruby || '').trim());
+      const role = c.role || extractedRole || '登場人物';
+
+      const targetIndex = result.findIndex((existing) => {
+        const { cleanName: exName } = NovelEngine.sanitizeCharacterName(existing.name);
+        const exRuby = NovelEngine.toHiragana((existing.ruby || '').trim());
+
+        // 1. 名前が完全一致
+        if (exName === name) return true;
+
+        // 2. ルビが完全一致（かつ2文字以上）
+        if (exRuby && ruby && exRuby === ruby && ruby.length >= 2) return true;
+
+        // 3. 一方が他方のフルネーム・短縮名（例: 「リナ・スウィート」と「リナ」）
+        const shorter = name.length < exName.length ? name : exName;
+        const longer = name.length < exName.length ? exName : name;
+
+        if (shorter.length >= 2 && longer.includes(shorter)) {
+          const shorterRuby = name.length < exName.length ? ruby : exRuby;
+          const longerRuby = name.length < exName.length ? exRuby : ruby;
+
+          if (!shorterRuby || !longerRuby || longerRuby.includes(shorterRuby) || shorterRuby.includes(longerRuby)) {
+            return true;
+          }
+          if (c.role && existing.role && (c.role.includes(existing.role) || existing.role.includes(c.role))) {
+            return true;
+          }
+        }
+
+        return false;
+      });
+
+      if (targetIndex < 0) {
+        result.push({
+          ...c,
+          name,
+          ruby,
+          role,
+        });
+      } else {
+        const existing = result[targetIndex];
+
+        // 名前の採用: より長く詳細な名前を優先
+        if (name.length > existing.name.length) {
+          existing.name = name;
+        }
+
+        // ルビの採用: より長く詳細なルビを優先
+        if (ruby.length > (existing.ruby || '').length) {
+          existing.ruby = ruby;
+        }
+
+        // 役割の採用
+        if ((!existing.role || existing.role === '登場人物' || existing.role === '主要人物') && role && role !== '登場人物') {
+          existing.role = role;
+        }
+
+        // 外見の採用
+        const isExAppPlaceholder = !existing.appearance || existing.appearance.includes('の外見・容姿特徴') || existing.appearance === 'プロット分析より自動策定';
+        const isNewAppPlaceholder = !c.appearance || c.appearance.includes('の外見・容姿特徴') || c.appearance === 'プロット分析より自動策定';
+
+        if (isExAppPlaceholder && !isNewAppPlaceholder && c.appearance) {
+          existing.appearance = c.appearance;
+        } else if (!isExAppPlaceholder && !isNewAppPlaceholder && c.appearance && !existing.appearance?.includes(c.appearance)) {
+          existing.appearance = `${existing.appearance} / ${c.appearance}`;
+        }
+
+        // 背景の採用
+        const isExBgPlaceholder = !existing.background || existing.background.includes('における人物背景') || existing.background === 'プロット分析より自動策定';
+        const isNewBgPlaceholder = !c.background || c.background.includes('における人物背景') || c.background === 'プロット分析より自動策定';
+
+        if (isExBgPlaceholder && !isNewBgPlaceholder && c.background) {
+          existing.background = c.background;
+        } else if (!isExBgPlaceholder && !isNewBgPlaceholder && c.background && !existing.background?.includes(c.background)) {
+          existing.background = `${existing.background} / ${c.background}`;
+        }
+
+        // 性格・口調の採用
+        const isExPersPlaceholder = !existing.personality || existing.personality === '初期プロットにて設定' || existing.personality.includes('情報なし');
+        const isNewPersPlaceholder = !c.personality || c.personality === '初期プロットにて設定' || c.personality.includes('情報なし');
+
+        if (isExPersPlaceholder && !isNewPersPlaceholder && c.personality) {
+          existing.personality = c.personality;
+        } else if (!isExPersPlaceholder && !isNewPersPlaceholder && c.personality && !existing.personality?.includes(c.personality)) {
+          existing.personality = `${existing.personality} / ${c.personality}`;
+        }
+
+        // 一人称・二人称
+        if ((!existing.firstPerson || existing.firstPerson === '私') && c.firstPerson && c.firstPerson !== '私') {
+          existing.firstPerson = c.firstPerson;
+        }
+        if ((!existing.secondPerson || existing.secondPerson === '概念') && c.secondPerson && c.secondPerson !== 'あなた') {
+          existing.secondPerson = c.secondPerson;
+        }
+
+        // 挿絵プロンプト
+        existing.illustrationPrompt = NovelEngine.buildIllustrationPrompt({
+          name: existing.name,
+          appearance: existing.appearance,
+          role: existing.role,
+          illustrationPrompt: c.illustrationPrompt || existing.illustrationPrompt,
+        });
+      }
+    });
+
+    return result;
+  }
+
+  /**
    * 一人称・二人称を「俺」「私」「君」などのシンプルな代名詞に補正する
    */
   public static sanitizePronoun(raw: string, defaultPronoun: string, isSecondPerson = false): string {
@@ -3060,6 +3190,7 @@ ${draftContent.slice(0, 10000)}
     removedCount += (initialWbCount - cleanedBible.worldBuilding.length);
 
     const initialCharCount = cleanedBible.characters.length;
+    cleanedBible.characters = this.deduplicateCharacters(cleanedBible.characters);
     cleanedBible.characters = cleanedBible.characters
       .filter((c) => !this.isJunkTitle(c.name))
       .map((c) => {
@@ -3093,6 +3224,7 @@ ${draftContent.slice(0, 10000)}
           illustrationPrompt,
         };
       });
+    cleanedBible.characters = this.deduplicateCharacters(cleanedBible.characters);
     removedCount += (initialCharCount - cleanedBible.characters.length);
 
     const initialGeoCount = cleanedBible.geography.length;
