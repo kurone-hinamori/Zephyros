@@ -2530,8 +2530,11 @@ ${draftContent.slice(0, 10000)}
     clean = clean.replace(/^(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Main\s*Concept|Summary|Description|Catchphrase|Concept|Title|【あらすじ】|【メインコンセプト】|【キャッチコピー】|【詳細プロンプt?】|あらすじ[：:]?|メインコンセプト[：:]?)[：:\s\n]*/gi, '');
     clean = clean.replace(/(?:Story\s*Concept|Detailed\s*Prompt|Synopsis|Main\s*Concept|Catchphrase|【あらすじ】|【メインコンセプト】|【キャッチコピー】)[：:\s]*/gi, '');
 
-    // 2. ギリシャ文字（Φ、Α〜Ω、α〜ω）や記号ノイズの除去
-    clean = clean.replace(/[ΦΑ-Ωα-ω]+/g, '');
+    // 2. ギリシャ文字、ヒンディー語（デヴァーナガリー文字例: प्रचलित）、ハングル、キリル文字、タイ語等の非日本語・異言語Unicode文字の全自動徹底除去
+    clean = clean.replace(/[^\u0009-\u000D\u0020-\u007E\u00A0-\u00FF\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]+/g, '');
+
+    // 2.5 途切れた四字熟語・慣用句の自動補正（例: 「天真爛」→「天真爛漫」）
+    clean = clean.replace(/天真爛(?!漫)/g, '天真爛漫');
 
     // 3. 地の文に挟まる不要な浮遊英単語（例: heavy, casual, oversized, enjoy）の除去
     clean = clean.replace(/\b(?:heavy|casual|oversized|stylish|cool|enjoy)\b\s*/gi, '');
