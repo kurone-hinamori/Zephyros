@@ -1105,6 +1105,11 @@ ${JSON.stringify(draftData, null, 2)}
 
     // タイトルのクリーンアップ（長すぎる場合・指定文ママ・無関係タイトルの場合は再生成）
     let cleanTitle = (step1Parsed.title || '').trim();
+    cleanTitle = NovelEngine.cleanForeignNoiseText(cleanTitle);
+
+    // 末尾の助詞（「〜の」「〜と」「〜が」「〜にて」等）や不自然な省略の除去
+    cleanTitle = cleanTitle.replace(/(?:[はがをでにてとヘよりから]|\.\.\.|\dots|…)+$/, '').trim();
+
     const isUnrelatedTitle =
       promptKeywords.length > 0 &&
       cleanTitle.length > 0 &&
@@ -1112,6 +1117,7 @@ ${JSON.stringify(draftData, null, 2)}
 
     if (
       !cleanTitle ||
+      cleanTitle.length < 3 ||
       cleanTitle.length > 35 ||
       cleanTitle === promptSettings.detailedPrompt ||
       cleanTitle === promptSettings.storyConcept ||
@@ -1120,13 +1126,19 @@ ${JSON.stringify(draftData, null, 2)}
       cleanTitle.includes('\n') ||
       isUnrelatedTitle
     ) {
-      const candidate = (promptSettings.storyConcept || promptSettings.detailedPrompt || '').split(/[\n。！？]/)[0].trim();
-      if (candidate.length > 0 && candidate.length <= 25 && !candidate.startsWith('主人公は')) {
-        cleanTitle = candidate;
-      } else if (promptSettings.storyConcept) {
-        cleanTitle = promptSettings.storyConcept.slice(0, 22);
-      } else {
+      // storyConcept または detailedPrompt を句読点（、。！？）で分割し、自然な完成文節からタイトルを抽出
+      const fullText = `${promptSettings.storyConcept}\n${promptSettings.detailedPrompt}`;
+      const candidates = fullText
+        .split(/[\n。！？!?,、]/)
+        .map((p) => p.trim())
+        .filter((p) => p.length >= 4 && p.length <= 25 && !p.startsWith('主人公は') && !p.startsWith('これは'));
+
+      if (candidates.length > 0) {
+        cleanTitle = candidates[0].replace(/(?:[はがをでにてとヘよりから]|\.\.\.|\dots|…)+$/, '').trim();
+      } else if (promptSettings.themes.length > 0) {
         cleanTitle = `${promptSettings.themes.join('×')}の物語`;
+      } else {
+        cleanTitle = '新規物語';
       }
     }
     step1Parsed.title = cleanTitle;
@@ -2934,14 +2946,14 @@ ${suikoResult.summaryPrompt}
 
     // 逆に概念が空でプロンプトがある場合
     if (!cleanedConcept && cleanedPrompt) {
-      const sentenceMatch = cleanedPrompt.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
-      cleanedConcept = sentenceMatch ? sentenceMatch[1] : cleanedPrompt.slice(0, 50).replace(/[\r\n]+/g, ' ');
+      const sentenceMatch = cleanedPrompt.match(/^([^、。\n！？!?]+[、。\n！？!?]?)/);
+      cleanedConcept = sentenceMatch ? sentenceMatch[1].trim() : cleanedPrompt.split(/[\n。！？!?,、]/)[0].trim();
     }
 
     // 両方が空で生テキストがある場合
     if (!cleanedConcept && !cleanedPrompt && rawTextClean) {
-      const sentenceMatch = rawTextClean.match(/^([^。\n！？!?]+[。\n！？!?]?)/);
-      cleanedConcept = sentenceMatch ? sentenceMatch[1] : rawTextClean.slice(0, 50).replace(/[\r\n]+/g, ' ');
+      const sentenceMatch = rawTextClean.match(/^([^、。\n！？!?]+[、。\n！？!?]?)/);
+      cleanedConcept = sentenceMatch ? sentenceMatch[1].trim() : rawTextClean.split(/[\n。！？!?,、]/)[0].trim();
       cleanedPrompt = rawTextClean;
     }
 
