@@ -1,6 +1,6 @@
 // 小説自動生成 ＆ マルチエージェント協調エンジン (設定・用語自動抽出・履歴管理機能付き)
 
-import { PromptSettings, SettingBible, Glossary, Chapter, ReviewComment, ExtractedSettingDelta, CharacterSetting, WorldSetting, LocationSetting, GlossaryTerm, RubySetting, NovelData, SystemPrompts } from '../types';
+import { PromptSettings, SettingBible, Glossary, Chapter, ReviewComment, ExtractedSettingDelta, CharacterSetting, WorldSetting, LocationSetting, GlossaryTerm, RubySetting, NovelData, SystemPrompts, ProofreadIssue, ProofreadResult } from '../types';
 import { OllamaService } from './ollamaService';
 
 export const DEFAULT_SYSTEM_PROMPTS: SystemPrompts = {
@@ -2114,7 +2114,94 @@ ${cleanOriginalDraft}
   }
 
   /**
-   * 4. 編集者AIによる原稿の軽量校閲 & 矛盾点チェック (編集者AI Gemma)
+   * Suiko (推敲) エンジンによる日本語文章の自動推敲分析（Rust Tauri backend / JS Fallback）
+   */
+  public static async proofreadText(text: string): Promise<ProofreadResult> {
+    if (!text || !text.trim()) {
+      return {
+        issues: [],
+        summaryPrompt: '【Suiko推敲レポート】文章が空です。',
+        totalCharacters: 0,
+        sentenceCount: 0,
+        readabilityScore: 100,
+      };
+    }
+
+    try {
+      if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const res = await invoke<ProofreadResult>('suiko_proofread_text', { text });
+        if (res) return res;
+      }
+    } catch (err) {
+      console.warn('Tauri suiko_proofread_text invoke failed, using fallback JS proofreader:', err);
+    }
+
+    return NovelEngine.fallbackJsProofread(text);
+  }
+
+  private static fallbackJsProofread(text: string): ProofreadResult {
+    const lines = text.split('\n');
+    const issues: ProofreadIssue[] = [];
+    let totalChars = 0;
+    let sentenceCount = 0;
+
+    const raNukiList = ['見れる', '食べれる', '来れる', '出れる', '着れる', '受けれる', '考えれる'];
+    const redundantList = [
+      { p: 'まず最初に', s: '「最初」または「まず」に絞る' },
+      { p: '頭痛が痛い', s: '「頭痛がする」または「頭が痛い」' },
+      { p: '違和感を感じる', s: '「違和感を覚える」' },
+    ];
+
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      totalChars += trimmed.length;
+      sentenceCount += (trimmed.match(/[。！？!?]/g) || [1]).length;
+
+      raNukiList.forEach((pattern) => {
+        if (trimmed.includes(pattern)) {
+          issues.push({
+            lineNumber: idx + 1,
+            category: 'ら抜き言葉',
+            severity: 'warning',
+            message: `「${pattern}」はら抜き言葉の可能性があります。`,
+            targetText: pattern,
+            suggestion: pattern.replace('れる', 'られる'),
+          });
+        }
+      });
+
+      redundantList.forEach(({ p, s }) => {
+        if (trimmed.includes(p)) {
+          issues.push({
+            lineNumber: idx + 1,
+            category: '冗長表現',
+            severity: 'warning',
+            message: `「${p}」は二重表現です。`,
+            targetText: p,
+            suggestion: s,
+          });
+        }
+      });
+    });
+
+    const readabilityScore = Math.max(20, 100 - issues.length * 5);
+    const summaryPrompt = issues.length === 0
+      ? '【Suiko推敲レポート】文章に大きな問題は検出されませんでした。'
+      : `【Suiko自動推敲レポート】${issues.length}件の指摘事項があります。`;
+
+    return {
+      issues,
+      summaryPrompt,
+      totalCharacters: totalChars,
+      sentenceCount: Math.max(1, sentenceCount),
+      readabilityScore,
+    };
+  }
+
+  /**
+   * 4. 編集者AIによる原稿の軽量校閲 & 矛盾点チェック (編集者AI Gemma + Suiko推敲エンジン)
    */
   static async proofreadScene(
     baseUrl: string,
@@ -2126,9 +2213,12 @@ ${cleanOriginalDraft}
     previousContextSummary: string,
     signal?: AbortSignal,
     aiSettings?: any,
-    promptSettings?: PromptSettings
-  ): Promise<{ comments: ReviewComment[]; hasCriticalError: boolean }> {
+    promptSettings?: PromptSettings,
+    precomputedSuiko?: ProofreadResult
+  ): Promise<{ comments: ReviewComment[]; hasCriticalError: boolean; suikoResult: ProofreadResult }> {
+    const suikoResult = precomputedSuiko || (await NovelEngine.proofreadText(draftContent));
     const isJsonOutput = NovelEngine.isJsonOutput(draftContent);
+
     if (isJsonOutput) {
       return {
         hasCriticalError: true,
@@ -2143,6 +2233,7 @@ ${cleanOriginalDraft}
             resolved: false,
           },
         ],
+        suikoResult,
       };
     }
 
@@ -2151,12 +2242,14 @@ ${cleanOriginalDraft}
     const userPrompt = `【校閲対象章】: ${chapterTitle}
 【直前までのあらすじ】: ${previousContextSummary}
 
+${suikoResult.summaryPrompt}
+
 ${this.buildBibleContext(bible, glossary)}
 
 【チェック対象原稿】:
 ${draftContent.slice(0, 12000)}
 
-上記原稿を簡単に校閲し、JSON形式で指摘事項を出力してください。問題がなければ "comments": [] で返してください。`;
+上記原稿を簡単に校閲し、Suiko自動推敲エンジンの指摘事項も含めてJSON形式で指摘事項を出力してください。問題がなければ "comments": [] で返してください。`;
 
     try {
       const rawResponse = await OllamaService.chat(baseUrl, editorModel, systemPrompt, userPrompt, 0.2, signal, true, aiSettings);
@@ -2172,17 +2265,45 @@ ${draftContent.slice(0, 12000)}
         resolved: false
       }));
 
+      // Suiko推敲エンジンで検出された課題も校閲指摘リストへマージ
+      suikoResult.issues.forEach((issue, idx) => {
+        if (!comments.some((c) => c.originalText === issue.targetText)) {
+          comments.push({
+            id: `suiko-rev-${Date.now()}-${idx}`,
+            timestamp: new Date().toLocaleTimeString(),
+            type: issue.severity === 'error' ? 'contradiction' : 'typo',
+            originalText: issue.targetText,
+            suggestedText: issue.suggestion || '',
+            comment: `[Suiko推敲: ${issue.category}] ${issue.message}`,
+            resolved: false,
+          });
+        }
+      });
+
       const hasCritical = typeof parsed.hasCriticalError === 'boolean'
         ? parsed.hasCriticalError
         : comments.some((c) => c.type === 'contradiction');
 
       return {
         comments,
-        hasCriticalError: hasCritical
+        hasCriticalError: hasCritical,
+        suikoResult,
       };
-    } catch (e) {
-      console.warn('Editor response parse error, assuming no critical errors:', e);
-      return { comments: [], hasCriticalError: false };
+    } catch (e: any) {
+      if (signal?.aborted) throw e;
+      console.warn('Editor response parse error, returning Suiko fallback issues:', e);
+
+      const comments: ReviewComment[] = suikoResult.issues.map((issue, idx) => ({
+        id: `suiko-fallback-${Date.now()}-${idx}`,
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'typo',
+        originalText: issue.targetText,
+        suggestedText: issue.suggestion || '',
+        comment: `[Suiko自動校閲: ${issue.category}] ${issue.message}`,
+        resolved: false,
+      }));
+
+      return { comments, hasCriticalError: false, suikoResult };
     }
   }
 

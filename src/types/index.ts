@@ -202,3 +202,21 @@ export interface ExtractedSettingDelta {
     ruby: string;
   }>;
 }
+
+export interface ProofreadIssue {
+  lineNumber: number;
+  category: string;
+  severity: 'warning' | 'error' | 'info';
+  message: string;
+  targetText: string;
+  suggestion?: string;
+}
+
+export interface ProofreadResult {
+  issues: ProofreadIssue[];
+  summaryPrompt: string;
+  totalCharacters: number;
+  sentenceCount: number;
+  readabilityScore: number;
+}
+

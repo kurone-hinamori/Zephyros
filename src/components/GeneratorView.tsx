@@ -671,11 +671,14 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                     : `編集者AI (${aiSettings.editorModel}) が修正後の原稿を再校閲 (ダブルチェック ${proofreadAttempt}回目) 中...`
                 );
 
+                // Suiko (Rust推敲エンジン) による事前文章分析
+                const suikoRes = await NovelEngine.proofreadText(draftedContent);
+
                 setEditorLog((prev) => [
                   ...prev,
                   proofreadAttempt === 1
-                    ? `[執筆者AI] シーン ${sIdx + 1} の初稿執筆完了 (${draftedContent.length}字)。校閲中...`
-                    : `[システム] 修正後の原稿 (${draftedContent.length}字) を編集者AIが再校閲 (ダブルチェック) 中...`
+                    ? `[Suiko推敲エンジン] 提出原稿の事前分析完了 (推敲スコア: ${suikoRes.readabilityScore}/100 | 検出課題: ${suikoRes.issues.length}件)`
+                    : `[Suiko推敲エンジン] 修正後原稿の再分析完了 (推敲スコア: ${suikoRes.readabilityScore}/100 | 検出課題: ${suikoRes.issues.length}件)`,
                 ]);
 
                 const review = await NovelEngine.proofreadScene(
@@ -688,7 +691,8 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                   prevSummary,
                   currentSession.abortController.signal,
                   aiSettings,
-                  promptSettings
+                  promptSettings,
+                  suikoRes
                 );
 
                 lastReviewComments = review.comments;

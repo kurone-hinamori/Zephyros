@@ -1,8 +1,11 @@
 // Zephyros Tauri Backend Entrypoint
 
+mod proofread;
+
 use std::fs;
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
+use proofread::{ProofreadResult, SuikoEngine};
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
@@ -355,6 +358,11 @@ async fn ollama_stop_model(model: String, url: Option<String>) -> Result<String,
     .map_err(|e| e.to_string())?
 }
 
+#[tauri::command]
+fn suiko_proofread_text(text: String) -> ProofreadResult {
+    SuikoEngine::analyze(&text)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -375,6 +383,7 @@ pub fn run() {
             ollama_chat_raw,
             ollama_chat_stream_raw,
             ollama_stop_model,
+            suiko_proofread_text,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
