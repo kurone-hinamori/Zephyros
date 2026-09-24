@@ -2764,6 +2764,67 @@ ${draftContent.slice(0, 10000)}
   }
 
   /**
+   * 編集者AI ＆ Suiko推敲エンジンによるお題ガチャ結果（コンセプト・あらすじ）の二段階校閲＆洗練
+   */
+  public static async proofreadGachaResult(
+    baseUrl: string,
+    editorModel: string,
+    rawConcept: string,
+    rawSynopsis: string,
+    themes: string[],
+    signal?: AbortSignal,
+    aiSettings?: any,
+    _promptSettings?: PromptSettings
+  ): Promise<{ storyConcept: string; detailedPrompt: string }> {
+    const cleanConcept = this.cleanForeignNoiseText(rawConcept);
+    const cleanSynopsis = this.cleanForeignNoiseText(rawSynopsis);
+
+    if (!editorModel || !cleanConcept) {
+      return { storyConcept: cleanConcept, detailedPrompt: cleanSynopsis };
+    }
+
+    try {
+      const suikoResult = await NovelEngine.proofreadText(`${cleanConcept}\n${cleanSynopsis}`);
+
+      const systemPrompt = `あなたはプロのライトノベル文芸誌編集長です。
+執筆AIが生成したお題ガチャの【メインコンセプト（キャッチコピー）】と【詳細あらすじ】を校閲し、よりキャッチーで日本語として美しく洗練された文章に校閲・修正してください。
+
+【厳律ルール】
+1. お題キーワード（${themes.join(', ')}）の設定・属性・トーンを100%完璧に遵守してください。
+2. 異言語ノイズ（英単語、ギリシャ文字、韓国語・デーヴァナーガリー等の非日本語スクリプト、化け文字等）が含まれている場合は完全にクレンジングしてください。
+3. "storyConcept" は50字程度の完成された1文のキャッチコピー（「【あらすじ】」等の見出し不可）に整えてください。
+4. "detailedPrompt" は300〜500字程度の魅力的なあらすじ文章に整えてください。
+5. 必ず以下のJSON形式のみを出力してください。思考プロセス(<think>)や解説メッセージは含めないでください。
+
+{
+  "storyConcept": "校閲・洗練後のメインコンセプト（50字程度）",
+  "detailedPrompt": "校閲・洗練後の詳細あらすじ（300〜500字程度）"
+}`;
+
+      const userPrompt = `【お題キーワード】: ${themes.join(', ')}
+${suikoResult.summaryPrompt}
+
+【初案コンセプト】: ${cleanConcept}
+【初案あらすじ】: ${cleanSynopsis}`;
+
+      const rawRes = await OllamaService.chat(baseUrl, editorModel, systemPrompt, userPrompt, 0.3, signal, true, aiSettings);
+      const parsed = this.parseGachaResult(rawRes, cleanConcept);
+
+      if (parsed.storyConcept && parsed.detailedPrompt) {
+        return {
+          storyConcept: this.cleanForeignNoiseText(parsed.storyConcept),
+          detailedPrompt: this.cleanForeignNoiseText(parsed.detailedPrompt),
+        };
+      }
+    } catch (err) {
+      if (signal?.aborted) throw err;
+      console.warn('Editor AI gacha proofread failed, using cleaned raw output:', err);
+    }
+
+    return { storyConcept: cleanConcept, detailedPrompt: cleanSynopsis };
+  }
+
+  /**
    * AIモデルごとのキー命名ブレ（"detailedPrompt way", "detailed_prompt", "synopsis" 等）や
    * マークダウン装飾・JSON汚染を完全吸収してコンセプトとあらすじをパース・抽出する
    */

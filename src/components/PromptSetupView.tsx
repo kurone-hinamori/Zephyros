@@ -73,12 +73,30 @@ export const PromptSetupView: React.FC<PromptSetupViewProps> = ({
 
       const rawResponse = await OllamaService.chat(baseUrl, model, systemPrompt, userPrompt, 0.85, undefined, true, aiOptions);
       const parsed = NovelEngine.parseGachaResult(rawResponse, `${themes.join('×')}の物語`);
+      let finalConcept = parsed.storyConcept;
+      let finalSynopsis = parsed.detailedPrompt;
 
-      if (parsed.storyConcept || parsed.detailedPrompt) {
+      // 編集者AI ＆ Suiko推敲エンジンによる二段階校閲・洗練
+      if (aiSettings?.editorModel && finalConcept) {
+        const proofreadRes = await NovelEngine.proofreadGachaResult(
+          baseUrl,
+          aiSettings.editorModel,
+          finalConcept,
+          finalSynopsis,
+          themes,
+          undefined,
+          aiOptions,
+          formState
+        );
+        if (proofreadRes.storyConcept) finalConcept = proofreadRes.storyConcept;
+        if (proofreadRes.detailedPrompt) finalSynopsis = proofreadRes.detailedPrompt;
+      }
+
+      if (finalConcept || finalSynopsis) {
         updateStateAndSave((prev) => ({
           ...prev,
-          storyConcept: parsed.storyConcept,
-          detailedPrompt: parsed.detailedPrompt,
+          storyConcept: finalConcept,
+          detailedPrompt: finalSynopsis,
         }));
       } else {
         throw new Error('AIからの応答フォーマットを抽出できませんでした。');
