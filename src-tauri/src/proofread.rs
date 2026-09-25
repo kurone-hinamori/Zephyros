@@ -68,6 +68,9 @@ impl SuikoEngine {
 
             // 行単位チェック: 助詞の連続・重なり
             Self::check_particle_repetition(line_num, trimmed, &mut issues);
+
+            // 行単位チェック: ノイズ外国語・カタカナ固有名詞途切れ（「シルバー・レ（Silver Legacy）」等）
+            Self::check_foreign_noise_and_truncation(line_num, trimmed, &mut issues);
         }
 
         // 2. 文単位チェック（一文の長さ、読点密度）
@@ -206,6 +209,64 @@ impl SuikoEngine {
                 target_text: text.chars().take(30).collect::<String>() + "...",
                 suggestion: Some("言い換えや文の分割を検討してください。".to_string()),
             });
+        }
+    }
+
+    /// 外国語ノイズ・カタカナ固有名詞途切れ（「シルバー・レ（Silver Legacy）」等）のチェック
+    fn check_foreign_noise_and_truncation(line_num: usize, text: &str, issues: &mut Vec<ProofreadIssue>) {
+        let chars: Vec<char> = text.chars().collect();
+        let len = chars.len();
+
+        for i in 0..len {
+            if chars[i] == '（' || chars[i] == '(' {
+                let mut kata_count = 0;
+                let mut start_idx = i;
+                while start_idx > 0 {
+                    let c = chars[start_idx - 1];
+                    if (c >= '\u{30A0}' && c <= '\u{30FF}') || c == '・' || c == 'ー' {
+                        kata_count += 1;
+                        start_idx -= 1;
+                    } else {
+                        break;
+                    }
+                }
+
+                let mut eng_count = 0;
+                let mut end_idx = i + 1;
+                while end_idx < len && chars[end_idx] != '）' && chars[end_idx] != ')' {
+                    let c = chars[end_idx];
+                    if c.is_ascii_alphabetic() || c == ' ' {
+                        eng_count += 1;
+                    }
+                    end_idx += 1;
+                }
+
+                if kata_count >= 2 && eng_count >= 2 && end_idx < len {
+                    let snippet: String = chars[start_idx..=end_idx].iter().collect();
+                    issues.push(ProofreadIssue {
+                        line_number: line_num,
+                        category: "ノイズ外国語・表記崩れ".to_string(),
+                        severity: "error".to_string(),
+                        message: format!("「{}」のようなカタカナ＋英語カッコ表記（または固有名詞の途切れノイズ）を検出しました。", snippet),
+                        target_text: snippet,
+                        suggestion: Some("設定資料集・固有名詞に基づく正しい日本語表記（例: 「シルバー・レガシー」）へ修正してください。".to_string()),
+                    });
+                }
+            }
+        }
+
+        let noise_words = ["get", "gett", "むget", "oversized", "casual", "heavy", "stylish"];
+        for noise in &noise_words {
+            if text.contains(noise) {
+                issues.push(ProofreadIssue {
+                    line_number: line_num,
+                    category: "英単語ノイズ".to_string(),
+                    severity: "warning".to_string(),
+                    message: format!("日本語文脈に不要なアルファベットノイズ「{}」が混入しています。", noise),
+                    target_text: noise.to_string(),
+                    suggestion: Some("不要な英単語を削除するかカタカナ/日本語表現に修正してください。".to_string()),
+                });
+            }
         }
     }
 

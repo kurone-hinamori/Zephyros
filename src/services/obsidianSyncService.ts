@@ -236,10 +236,11 @@ ${project.novelData?.synopsis || project.promptSettings.detailedPrompt}
       const typeLabel = edCm.type === 'contradiction' ? '設定矛盾指摘' : '誤字脱字・推敲指摘';
 
       // 赤ペン (編集AI) Callout
+      const edComment = (edCm.comment || '').trim() || (edCm.originalText ? `指摘箇所「${edCm.originalText}」の校閲指摘` : '文章表現の推敲・誤字修正指摘');
       md += `> [!danger] 🔴 編集AIの校閲指摘 #${issueNum} [${typeLabel}]\n`;
       if (edCm.originalText) md += `> **指摘対象箇所**: \`${edCm.originalText}\`\n`;
       if (edCm.suggestedText) md += `> **編集部提案**: \`${edCm.suggestedText}\`\n`;
-      md += `> **指摘理由・コメント**: ${edCm.comment}\n\n`;
+      md += `> **指摘理由・コメント**: ${edComment}\n\n`;
 
       // 青ペン (作家AI) Callout (対応するインデックスの返答、なければ自動対応補完)
       const wrCm = writerComments[idx] || writerComments.find((w) => w.originalText === edCm.originalText);
@@ -252,7 +253,7 @@ ${project.novelData?.synopsis || project.promptSettings.detailedPrompt}
         const cleanSugg = edCm.suggestedText.replace(/[（\(].*?[）\)]/g, '').trim();
         md += `> **適用結果**: \`${edCm.originalText}\` → \`${cleanSugg}\`\n`;
       }
-      const responseComment = wrCm?.comment || `【作家AI対応完了】編集AIの校閲指摘 #${issueNum}「${edCm.comment}」を厳格に確認し、原稿本文の修正・対応を完了しました。`;
+      const responseComment = wrCm?.comment || `【作家AI対応完了】編集AIの校閲指摘 #${issueNum}「${edComment}」を厳格に確認し、原稿本文の修正・対応を完了しました。`;
       md += `> **対応状況**: ${responseComment}\n\n`;
     });
 

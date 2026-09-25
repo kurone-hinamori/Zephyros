@@ -126,10 +126,10 @@ export const DEFAULT_SYSTEM_PROMPTS: SystemPrompts = {
 2. 設定との致命的な矛盾（一人称・性格・外見・役割等の食い違い）が存在する場合のみ hasCriticalError: true としてください。
 3. 単純な誤字脱字（typo）や語尾・表現の提案（suggestion）は hasCriticalError: false としてください。
 4. **ノイズ外国語・異言語文字・壊れた単語の厳格検出と校閲**:
-   - 地の文や会話文の中に不自然に混ざっているノイズ英単語・アルファベット（例: get, gett, oversized, casual 等）、意味不明なカッコ単語（例: get（get/gett）、（むget）、（get/get））、異言語文字（ハングル・韓国語等、例: バッド が バ<ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42>みのようになった文字化け）を **見逃さずに必ず typo（誤字・表記崩れ）として検出** してください。
-   - 必ず "originalText" にその混入箇所（例: "get（get/gett）" や "バ<ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42><ctrl42>にか")を指定し、"suggestedText" に文脈に合う正しい日本語（例: "無駄のない" や "バット"）を指定してください。
-5. **外国人キャラクターの台詞における日本語訳チェック**:
-   - 外国人キャラが本国語の単語や台詞を発言しているのに直後に日本語訳（カッコ書き）が付いていない場合は typo として指摘し、"suggestedText" に日本語訳を添えた正しい表記案（例: 「Spasibo（ありがとう）」）を指定してください。
+   - 地の文や会話文の中に不自然に混ざっているノイズ英単語・アルファベット（例: get, gett, oversized, casual 等）、意味不明なカッコ単語（例: get（get/gett）、（むget））、異言語文字（ハングル・韓国語等）を **見逃さずに必ず typo（誤字・表記崩れ）として検出** してください。
+   - 必ず "originalText" にその混入箇所、"suggestedText" に文脈に合う正しい日本語を指定し、"comment" に指摘理由を明記してください。
+5. **外国人キャラクターの台詞・カッコ英語表記における表記チェック**:
+   - 地の文やセリフに 『シルバー・レ（Silver Legacy）』 や 『アルド（Aldo）』 のような不自然なカタカナ＋英語カッコ表記、および 『シルバー・レ』 のように固有名詞の途中切れが含まれる場合は typo として指摘し、"suggestedText" に設定資料集・辞典に基づく正しい日本語表記（例: 「シルバー・レガシー」）を指定し、"comment" に指摘理由を明記してください。
 6. **ルビ表記・記号崩れのチェック**: 《 の閉じ忘れ（例: "夕暮れ《ゆうぐれ" → "夕暮れ《ゆうぐれ》"）やルビの脱落・カッコ崩れは typo として指摘し、必ず "originalText" と "suggestedText" を指定してください。
 7. **台詞末尾の句点（。）および文末切れのチェック**: 台詞の末尾に「。」が含まれる場合（例: 『「〜〜。」』）や、文章の最後が句点・終止記号なく途切れている場合は typo（表記崩れ）として指摘し、"originalText" と "suggestedText" を指定してください。
 8. **文章崩れ・フレーズ連続反復・読点異常のチェック**: 同一文節の無限繰り返しや読点（、）の過剰多用が含まれる場合は即座に hasCriticalError: true とし、"type": "contradiction", "comment": "文章の同一フレーズ無限ループまたは読点過剰崩れを検出" と指定してください。
@@ -2268,15 +2268,22 @@ ${draftContent.slice(0, 12000)}
       const rawResponse = await OllamaService.chat(baseUrl, editorModel, systemPrompt, userPrompt, 0.2, signal, true, aiSettings);
       const parsed = this.cleanAndParseJson(rawResponse);
 
-      const comments: ReviewComment[] = (parsed.comments || []).map((c: any, index: number) => ({
-        id: `rev-${Date.now()}-${index}`,
-        timestamp: new Date().toLocaleTimeString(),
-        type: c.type || 'suggestion',
-        originalText: c.originalText || c.original || '',
-        suggestedText: c.suggestedText || c.suggested || c.replacement || '',
-        comment: c.comment || '',
-        resolved: false
-      }));
+      const comments: ReviewComment[] = (parsed.comments || []).map((c: any, index: number) => {
+        const orig = (c.originalText || c.original || '').trim();
+        const sugg = (c.suggestedText || c.suggested || c.replacement || '').trim();
+        const rawComment = (c.comment || c.reason || c.description || c.details || c.issue || c.message || c.explanation || '').trim();
+        const comment = rawComment || (orig ? `指摘箇所「${orig}」の表記不備・推敲指摘` : '文章表現の推敲・誤字修正指摘');
+
+        return {
+          id: `rev-${Date.now()}-${index}`,
+          timestamp: new Date().toLocaleTimeString(),
+          type: c.type || 'suggestion',
+          originalText: orig,
+          suggestedText: sugg,
+          comment,
+          resolved: false,
+        };
+      });
 
       // Suiko推敲エンジンで検出された課題も校閲指摘リストへマージ
       suikoResult.issues.forEach((issue, idx) => {
@@ -2686,6 +2693,15 @@ ${draftContent.slice(0, 10000)}
 
     // 6. カタカナ単語 + カッコ内本名（例: 「リゲット（リリス）」）の修復
     clean = clean.replace(/([ァ-ヴー]{2,})[\(（]([ァ-ヴー一-龠ぁ-ん]{2,})[\)）]/g, (_m, p1, p2) => p1 === p2 ? p1 : p2);
+
+    // 6.5 カタカナ＋英語カッコ表記（例: 「シルバー・レ（Silver Legacy）」→「シルバー・レガシー」、「アルド（Aldo）」→「アルド」）の修復
+    clean = clean.replace(/([ァ-ヴー・]{2,})\s*[\(（]\s*([a-zA-Z\s]{2,})\s*[\)）]/g, (_m, kata, eng) => {
+      const cleanEng = eng.trim().toLowerCase();
+      if (cleanEng === 'silver legacy' || (kata.startsWith('シルバー') && cleanEng.includes('silver'))) {
+        return 'シルバー・レガシー';
+      }
+      return kata;
+    });
 
     // 7. Katakana + "get" / "gett" 破壊単語の自動修復
     clean = clean.replace(/大パ\s*get[!！]?/gi, '大パニック！');
