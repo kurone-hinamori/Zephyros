@@ -106,7 +106,7 @@ export interface AISettings {
 export interface ReviewComment {
   id: string;
   timestamp: string;
-  type: 'typo' | 'contradiction' | 'suggestion' | 'praise';
+  type: 'typo' | 'contradiction' | 'suggestion' | 'praise' | 'rewrite' | 'response';
   originalText?: string;
   suggestedText?: string;
   comment: string;

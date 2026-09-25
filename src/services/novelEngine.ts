@@ -1845,14 +1845,15 @@ ${this.buildBibleContext(bible, glossary)}
 
 ${this.buildBibleContext(bible, glossary)}
 
-【編集者AIからの校閲修正指示】:
+【編集者AIからの校閲・修正必須指示（最優先）】:
 ${feedbackText}
 ${isOriginalDraftJson ? '\n【絶対命令】前回の提出原稿は誤って設定JSONデータで出力されたため編集部により即座に却下されました。今回はJSON・コードブロック・設定項目は絶対に出力せず、地の文と会話文で構成された純粋な日本語の小説本文のみを即座に書き出してください。' : ''}
 
 【修正対象の初稿原稿】:
 ${cleanOriginalDraft}
 
-上記【校閲修正指示】を踏まえ、短縮ダイジェストを避け登場人物の対話・心理描写・情景を重厚に描き込んで、**${targetWordsPerScene} 字以上** の矛盾修正・改訂原稿本文のみを即座に書き出してください。`;
+【重要命令】:
+編集者AIから指摘された上記【校閲・修正必須指示】を100%確実に原稿に反映してください。指摘された設定矛盾（登場人物の容姿、一人称・二人称、アイテム設定、不自然な文脈）を必ず修正し、登場人物の対話・心理描写・情景を重厚に描き込んで、**${targetWordsPerScene} 字以上** の改訂原稿本文のみを即座に書き出してください。`;
 
     let raw = await OllamaService.chatStream(
       baseUrl,

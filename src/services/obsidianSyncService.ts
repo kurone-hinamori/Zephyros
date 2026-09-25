@@ -220,13 +220,18 @@ ${project.novelData?.synopsis || project.promptSettings.detailedPrompt}
 
     comments.forEach((cm, idx) => {
       if (cm.type === 'contradiction' || cm.type === 'typo') {
-        md += `> [!danger] 編集AIの校閲指摘 #${idx + 1} [${cm.type}]\n`;
-        if (cm.originalText) md += `> **原文**: \`${cm.originalText}\`\n`;
-        if (cm.suggestedText) md += `> **提案**: \`${cm.suggestedText}\`\n`;
-        md += `> **指摘内容**: ${cm.comment}\n\n`;
+        const typeLabel = cm.type === 'contradiction' ? '設定矛盾指摘' : '誤字脱字・推敲指摘';
+        md += `> [!danger] 🔴 編集AIの校閲指摘 #${idx + 1} [${typeLabel}]\n`;
+        if (cm.originalText) md += `> **指摘対象箇所**: \`${cm.originalText}\`\n`;
+        if (cm.suggestedText) md += `> **編集部提案**: \`${cm.suggestedText}\`\n`;
+        md += `> **指摘理由・コメント**: ${cm.comment}\n\n`;
       } else {
-        md += `> [!info] 作家AIの修正・対応ノート #${idx + 1}\n`;
-        md += `> ${cm.comment}\n\n`;
+        const typeLabel = cm.type === 'rewrite' ? '原稿自動リライト再執筆' : 'ピンポイント自動置換対応';
+        md += `> [!info] 🔵 作家AIの修正・対応ノート #${idx + 1} [${typeLabel}]\n`;
+        if (cm.originalText && cm.suggestedText) {
+          md += `> **適用結果**: \`${cm.originalText}\` → \`${cm.suggestedText}\`\n`;
+        }
+        md += `> **対応状況**: ${cm.comment}\n\n`;
       }
     });
 

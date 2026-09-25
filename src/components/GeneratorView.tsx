@@ -710,7 +710,7 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                     ]);
                   });
 
-                  // 2. 誤字脱字(typo)のピンポイント自動置換処理
+                  // 2. 誤字脱字(typo)のピンポイント自動置換処理 ＆ 作家AIの対応ログ（青ペン）の記録
                   let autoFixedCount = 0;
                   review.comments.forEach((comm) => {
                     if (comm.type === 'typo' && comm.originalText && comm.suggestedText) {
@@ -721,11 +721,20 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                           ...prev,
                           `[ピンポイント自動修正] 誤字脱字「${comm.originalText}」→「${comm.suggestedText}」に置換修正しました。`,
                         ]);
+                        lastReviewComments.push({
+                          id: `writer-fix-${Date.now()}-${autoFixedCount}`,
+                          timestamp: new Date().toLocaleTimeString(),
+                          type: 'response',
+                          originalText: comm.originalText,
+                          suggestedText: comm.suggestedText,
+                          comment: `【作家AI対応完了】指摘箇所「${comm.originalText}」を「${comm.suggestedText}」へ正確に置換・修正対応しました。`,
+                          resolved: true,
+                        });
                       }
                     }
                   });
 
-                  // 3. 重大な設定矛盾がある場合のみ全文リライト
+                  // 3. 重大な設定矛盾がある場合のみ全文リライト ＆ 作家AIの再執筆ログ（青ペン）の記録
                   if (review.hasCriticalError) {
                     if (proofreadAttempt < MAX_PROOFREAD_RETRIES) {
                       const isJsonDraft = NovelEngine.isJsonOutput(draftedContent);
@@ -762,6 +771,23 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                         ]);
                         draftedContent = rewriteDegen.cleanedText;
                       }
+
+                      // 作家AIのリライト完了ログ（青ペン）を追加
+                      const criticalSummary = review.comments
+                        .filter((c) => c.type === 'contradiction' || c.type === 'typo')
+                        .map((c) => c.comment)
+                        .slice(0, 3)
+                        .join(' / ');
+
+                      lastReviewComments.push({
+                        id: `writer-rewrite-${Date.now()}-${proofreadAttempt}`,
+                        timestamp: new Date().toLocaleTimeString(),
+                        type: 'rewrite',
+                        originalText: '',
+                        suggestedText: '',
+                        comment: `【作家AI再執筆完了】編集AIからの校閲指摘（${criticalSummary || '設定矛盾'}）を確実に反映し、地の文・セリフおよび設定資料との整合性を整えて原稿本文を自動改訂・再執筆しました。`,
+                        resolved: true,
+                      });
                     } else {
                       setEditorLog((prev) => [
                         ...prev,
