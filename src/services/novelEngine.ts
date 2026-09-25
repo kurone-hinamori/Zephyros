@@ -1096,49 +1096,47 @@ ${JSON.stringify(draftData, null, 2)}
     if (!Array.isArray(rawTerms)) rawTerms = [];
     if (!Array.isArray(rawRubies)) rawRubies = [];
 
-    // お題・コンセプト内の主要単語リスト
-    const promptKeywords = [
-      ...promptSettings.themes,
-      ...(promptSettings.storyConcept || '').split(/[\s,、。]/),
-      ...(promptSettings.detailedPrompt || '').split(/[\s,、。]/),
-    ].map((k) => k.trim()).filter((k) => k.length >= 2);
-
-    // タイトルのクリーンアップ（長すぎる場合・指定文ママ・無関係タイトルの場合は再生成）
+    // タイトルのクリーンアップ（末尾の助詞・ノイズの除去）
     let cleanTitle = (step1Parsed.title || '').trim();
     cleanTitle = NovelEngine.cleanForeignNoiseText(cleanTitle);
-
-    // 末尾の助詞（「〜の」「〜と」「〜が」「〜にて」等）や不自然な省略の除去
     cleanTitle = cleanTitle.replace(/(?:[はがをでにてとヘよりから]|\.\.\.|\dots|…)+$/, '').trim();
 
-    const isUnrelatedTitle =
-      promptKeywords.length > 0 &&
-      cleanTitle.length > 0 &&
-      !promptKeywords.some((kw) => cleanTitle.includes(kw) || kw.includes(cleanTitle));
+    // タイトルの有効性チェック（3〜45文字、改行なし、プロンプト文そのままの丸コピーでないこと）
+    const isValidTitle =
+      cleanTitle &&
+      cleanTitle.length >= 3 &&
+      cleanTitle.length <= 45 &&
+      cleanTitle !== promptSettings.detailedPrompt &&
+      cleanTitle !== promptSettings.storyConcept &&
+      !cleanTitle.startsWith('主人公は') &&
+      !cleanTitle.startsWith('これは') &&
+      !cleanTitle.includes('\n');
 
-    if (
-      !cleanTitle ||
-      cleanTitle.length < 3 ||
-      cleanTitle.length > 35 ||
-      cleanTitle === promptSettings.detailedPrompt ||
-      cleanTitle === promptSettings.storyConcept ||
-      cleanTitle.startsWith('主人公は') ||
-      cleanTitle.startsWith('これは') ||
-      cleanTitle.includes('\n') ||
-      isUnrelatedTitle
-    ) {
-      // storyConcept または detailedPrompt を句読点（、。！？）で分割し、自然な完成文節からタイトルを抽出
-      const fullText = `${promptSettings.storyConcept}\n${promptSettings.detailedPrompt}`;
-      const candidates = fullText
-        .split(/[\n。！？!?,、]/)
-        .map((p) => p.trim())
-        .filter((p) => p.length >= 4 && p.length <= 25 && !p.startsWith('主人公は') && !p.startsWith('これは'));
+    if (!isValidTitle) {
+      // Step 1 AIがタイトルを出力しなかった場合、専用タイトルAI（generateTitles）を安全呼出
+      try {
+        const generatedTitles = await NovelEngine.generateTitles(
+          baseUrl,
+          writerModel,
+          promptSettings,
+          step1Parsed.synopsis || promptSettings.storyConcept,
+          signal,
+          aiSettings
+        );
+        if (generatedTitles && generatedTitles.length > 0) {
+          cleanTitle = generatedTitles[0];
+        }
+      } catch (tErr) {
+        console.warn('generateTitles fallback in generateOutline failed:', tErr);
+      }
 
-      if (candidates.length > 0) {
-        cleanTitle = candidates[0].replace(/(?:[はがをでにてとヘよりから]|\.\.\.|\dots|…)+$/, '').trim();
-      } else if (promptSettings.themes.length > 0) {
-        cleanTitle = `${promptSettings.themes.join('×')}の物語`;
-      } else {
-        cleanTitle = '新規物語';
+      // AIタイトル生成が失敗した場合のフェールセーフ
+      if (!cleanTitle || cleanTitle.length < 3) {
+        if (promptSettings.themes.length > 0) {
+          cleanTitle = `${promptSettings.themes.join('×')}の物語`;
+        } else {
+          cleanTitle = '無題の物語';
+        }
       }
     }
     step1Parsed.title = cleanTitle;
