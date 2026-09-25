@@ -710,29 +710,43 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                     ]);
                   });
 
-                  // 2. 誤字脱字(typo)のピンポイント自動置換処理 ＆ 作家AIの対応ログ（青ペン）の記録
+                  // 2. ピンポイント自動置換処理 ＆ 作家AIの対応ログ（青ペン）の記録
                   let autoFixedCount = 0;
                   review.comments.forEach((comm) => {
-                    if (comm.type === 'typo' && comm.originalText && comm.suggestedText) {
-                      if (draftedContent.includes(comm.originalText)) {
-                        draftedContent = draftedContent.split(comm.originalText).join(comm.suggestedText);
+                    if (comm.originalText && comm.suggestedText) {
+                      const cleanOrig = comm.originalText.trim();
+                      const cleanSugg = NovelEngine.cleanSuggestedText(comm.suggestedText);
+
+                      if (cleanOrig && cleanSugg && draftedContent.includes(cleanOrig)) {
+                        draftedContent = draftedContent.split(cleanOrig).join(cleanSugg);
                         autoFixedCount++;
+                        comm.resolved = true;
                         setEditorLog((prev) => [
                           ...prev,
-                          `[ピンポイント自動修正] 誤字脱字「${comm.originalText}」→「${comm.suggestedText}」に置換修正しました。`,
+                          `[ピンポイント自動修正] 指摘箇所「${cleanOrig}」→「${cleanSugg}」に置換修正しました。`,
                         ]);
                         lastReviewComments.push({
                           id: `writer-fix-${Date.now()}-${autoFixedCount}`,
                           timestamp: new Date().toLocaleTimeString(),
                           type: 'response',
-                          originalText: comm.originalText,
-                          suggestedText: comm.suggestedText,
-                          comment: `【作家AI対応完了】指摘箇所「${comm.originalText}」を「${comm.suggestedText}」へ正確に置換・修正対応しました。`,
+                          originalText: cleanOrig,
+                          suggestedText: cleanSugg,
+                          comment: `【作家AI対応完了】指摘箇所「${cleanOrig}」を「${cleanSugg}」へ正確に置換・修正対応しました。`,
                           resolved: true,
                         });
                       }
                     }
                   });
+
+                  // 本文中に異言語スクリプト・英単語ノイズが残っている場合の万能クレンジング
+                  const cleanedManuscript = NovelEngine.cleanForeignNoiseText(draftedContent);
+                  if (cleanedManuscript !== draftedContent) {
+                    draftedContent = cleanedManuscript;
+                    setEditorLog((prev) => [
+                      ...prev,
+                      `[万能ノイズ除去] 本文中に混入していた非日本語スクリプト・異言語ノイズを自動除去修正しました。`,
+                    ]);
+                  }
 
                   // 3. 重大な設定矛盾がある場合のみ全文リライト ＆ 作家AIの再執筆ログ（青ペン）の記録
                   if (review.hasCriticalError) {

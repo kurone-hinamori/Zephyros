@@ -2754,6 +2754,39 @@ ${draftContent.slice(0, 10000)}
   }
 
   /**
+   * 編集AIの修正提案文（「A または B」「A (解説)」等）から純粋な置換用単語・文節のみをクレンジング抽出する
+   */
+  public static cleanSuggestedText(rawSuggested: string): string {
+    if (!rawSuggested || !rawSuggested.trim()) return '';
+    let text = rawSuggested.trim();
+
+    // 1. 「A または B」「A / B」「A or B」などの複数候補の分割
+    if (text.includes('または')) {
+      const rawParts = text.split('または').map((p) => p.trim());
+      const cleanedParts = rawParts.map((p) =>
+        p.replace(/[（\(].*?[）\)]/g, '').replace(/^[「『"`']|[」』"`']$/g, '').trim()
+      );
+      // 漢字・ひらがなを含む表現（解説記号抜きの純粋な日本語選択肢）を優先選択
+      text =
+        cleanedParts.find(
+          (p) => /[一-龠ぁ-ん]/.test(p) && !/[,\.、。]/.test(p) && !p.includes('その他')
+        ) || cleanedParts.find((p) => p.length >= 1 && p.length <= 18) || cleanedParts[0];
+    } else if (text.includes('／') || text.includes(' / ')) {
+      const parts = text.split(/[\/／]/).map((p) => p.trim());
+      text = parts[0];
+    }
+
+    // 2. カッコ内の補足ルビ・注釈を除去 (例: "僅かな(わずかな)" -> "僅かな")
+    text = text.replace(/[（\(].*?[）\)]/g, '').trim();
+
+    // 3. 句読点・余分な引用符・記号のトリミング
+    text = text.replace(/^[「『"`']|[」』"`']$/g, '').trim();
+
+    // 4. 外国語ノイズの除去
+    return this.cleanForeignNoiseText(text);
+  }
+
+  /**
    * JSONやMarkdownコードブロックで汚染されたプロンプトコンセプト文をプレーンテキストに純化
    */
   public static sanitizePromptConcept(concept: any): string {

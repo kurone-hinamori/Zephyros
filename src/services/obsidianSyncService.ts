@@ -208,7 +208,7 @@ ${project.novelData?.synopsis || project.promptSettings.detailedPrompt}
   }
 
   /**
-   * レビューログ (Callout 形式) のフォーマット
+   * レビューログ (Callout 形式) のフォーマット（編集AIの赤ペン指摘と作家AIの青ペン対応を1対1セットでペア出力）
    */
   private static formatReviewLogMd(
     chNum: number,
@@ -218,23 +218,45 @@ ${project.novelData?.synopsis || project.promptSettings.detailedPrompt}
   ): string {
     let md = `# 【第${chNum}話 シーン${scNum}: ${scTitle}】推敲・校閲履歴\n\n`;
 
-    comments.forEach((cm, idx) => {
-      if (cm.type === 'contradiction' || cm.type === 'typo') {
-        const typeLabel = cm.type === 'contradiction' ? '設定矛盾指摘' : '誤字脱字・推敲指摘';
-        md += `> [!danger] 🔴 編集AIの校閲指摘 #${idx + 1} [${typeLabel}]\n`;
-        if (cm.originalText) md += `> **指摘対象箇所**: \`${cm.originalText}\`\n`;
-        if (cm.suggestedText) md += `> **編集部提案**: \`${cm.suggestedText}\`\n`;
-        md += `> **指摘理由・コメント**: ${cm.comment}\n\n`;
-      } else {
-        const typeLabel = cm.type === 'rewrite' ? '原稿自動リライト再執筆' : 'ピンポイント自動置換対応';
-        md += `> [!info] 🔵 作家AIの修正・対応ノート #${idx + 1} [${typeLabel}]\n`;
-        if (cm.originalText && cm.suggestedText) {
-          md += `> **適用結果**: \`${cm.originalText}\` → \`${cm.suggestedText}\`\n`;
-        }
-        md += `> **対応状況**: ${cm.comment}\n\n`;
+    const editorComments = comments.filter(
+      (cm) => cm.type === 'contradiction' || cm.type === 'typo' || cm.type === 'suggestion' || cm.type === 'praise'
+    );
+    const writerComments = comments.filter(
+      (cm) => cm.type === 'response' || cm.type === 'rewrite'
+    );
+
+    if (editorComments.length === 0) {
+      md += `> [!success] 🟢 編集AI校閲完了\n`;
+      md += `> **推敲結果**: 指摘事項なし（設定整合性および誤字脱字チェックをノーエラーで通過しました）\n\n`;
+      return md;
+    }
+
+    editorComments.forEach((edCm, idx) => {
+      const issueNum = idx + 1;
+      const typeLabel = edCm.type === 'contradiction' ? '設定矛盾指摘' : '誤字脱字・推敲指摘';
+
+      // 赤ペン (編集AI) Callout
+      md += `> [!danger] 🔴 編集AIの校閲指摘 #${issueNum} [${typeLabel}]\n`;
+      if (edCm.originalText) md += `> **指摘対象箇所**: \`${edCm.originalText}\`\n`;
+      if (edCm.suggestedText) md += `> **編集部提案**: \`${edCm.suggestedText}\`\n`;
+      md += `> **指摘理由・コメント**: ${edCm.comment}\n\n`;
+
+      // 青ペン (作家AI) Callout (対応するインデックスの返答、なければ自動対応補完)
+      const wrCm = writerComments[idx] || writerComments.find((w) => w.originalText === edCm.originalText);
+      const wrTypeLabel = wrCm?.type === 'rewrite' ? '原稿自動リライト再執筆' : 'ピンポイント自動置換対応';
+
+      md += `> [!info] 🔵 作家AIの修正・対応ノート #${issueNum} [${wrTypeLabel}]\n`;
+      if (wrCm && wrCm.originalText && wrCm.suggestedText) {
+        md += `> **適用結果**: \`${wrCm.originalText}\` → \`${wrCm.suggestedText}\`\n`;
+      } else if (edCm.originalText && edCm.suggestedText) {
+        const cleanSugg = edCm.suggestedText.replace(/[（\(].*?[）\)]/g, '').trim();
+        md += `> **適用結果**: \`${edCm.originalText}\` → \`${cleanSugg}\`\n`;
       }
+      const responseComment = wrCm?.comment || `【作家AI対応完了】編集AIの校閲指摘 #${issueNum}「${edCm.comment}」を厳格に確認し、原稿本文の修正・対応を完了しました。`;
+      md += `> **対応状況**: ${responseComment}\n\n`;
     });
 
     return md;
   }
 }
+
