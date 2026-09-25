@@ -717,7 +717,12 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                       const cleanOrig = comm.originalText.trim();
                       const cleanSugg = NovelEngine.cleanSuggestedText(comm.suggestedText);
 
-                      if (cleanOrig && cleanSugg && draftedContent.includes(cleanOrig)) {
+                      if (
+                        cleanOrig &&
+                        cleanSugg !== null &&
+                        NovelEngine.isLiteralReplacement(cleanOrig, cleanSugg) &&
+                        draftedContent.includes(cleanOrig)
+                      ) {
                         draftedContent = draftedContent.split(cleanOrig).join(cleanSugg);
                         autoFixedCount++;
                         comm.resolved = true;

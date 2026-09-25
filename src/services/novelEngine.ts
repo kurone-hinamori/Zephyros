@@ -2701,6 +2701,9 @@ ${draftContent.slice(0, 10000)}
       return kata;
     });
 
+    // 6.8 英単語 ＋ （日本語） 注釈カッコノイズ（例: "heavy-duty（重厚）" → "重厚", "casual（カジュアル）" → "カジュアル"）の自動置換
+    clean = clean.replace(/[a-zA-Z0-9_\-]+\s*[\(（]([一-龠ぁ-んァ-ヴー・]{2,})[\)）]/g, '$1');
+
     // 7. Katakana + "get" / "gett" 破壊単語の自動修復
     clean = clean.replace(/大パ\s*get[!！]?/gi, '大パニック！');
     clean = clean.replace(/パ\s*get/gi, 'パニック');
@@ -2798,6 +2801,26 @@ ${draftContent.slice(0, 10000)}
 
     // 4. 外国語ノイズの除去
     return this.cleanForeignNoiseText(text);
+  }
+
+  /**
+   * suggestedTextが置換用の純粋な単語・表現（"重厚", "ヘビーデューティー", "" 等）であるかを検証する
+   * 説明文やメタ指示（"不要な英単語を削除してください" 等）が含まれる場合は false を返しプログラム置換を防止する
+   */
+  public static isLiteralReplacement(orig: string, sugg: string): boolean {
+    if (!orig || typeof sugg !== 'string') return false;
+    const cleanS = sugg.trim();
+    if (!cleanS) return true; // 空文字（削除指示）は有効な置換
+
+    const metaWords = [
+      '不要', '削除', '修正', '変更', '検討', '指示', '推奨', '提案',
+      'してください', 'ください', '文脈', '言い換え', '表現', '補足',
+      '指摘', 'または', 'など', '等', '理由', 'コメント', '可能性'
+    ];
+    if (metaWords.some((mw) => cleanS.includes(mw))) return false;
+    if (cleanS.length > 30 || cleanS.includes('\n') || cleanS.includes('。')) return false;
+
+    return true;
   }
 
   /**

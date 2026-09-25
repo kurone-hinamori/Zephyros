@@ -212,11 +212,12 @@ impl SuikoEngine {
         }
     }
 
-    /// 外国語ノイズ・カタカナ固有名詞途切れ（「シルバー・レ（Silver Legacy）」等）のチェック
+    /// 外国語ノイズ・カタカナ固有名詞途切れ（「シルバー・レ（Silver Legacy）」等）および複合英単語（heavy-duty（重厚））のチェック
     fn check_foreign_noise_and_truncation(line_num: usize, text: &str, issues: &mut Vec<ProofreadIssue>) {
         let chars: Vec<char> = text.chars().collect();
         let len = chars.len();
 
+        // 1. カタカナ + 英語カッコ表記 (例: シルバー・レ（Silver Legacy）, アルド（Aldo）)
         for i in 0..len {
             if chars[i] == '（' || chars[i] == '(' {
                 let mut kata_count = 0;
@@ -249,23 +250,72 @@ impl SuikoEngine {
                         severity: "error".to_string(),
                         message: format!("「{}」のようなカタカナ＋英語カッコ表記（または固有名詞の途切れノイズ）を検出しました。", snippet),
                         target_text: snippet,
-                        suggestion: Some("設定資料集・固有名詞に基づく正しい日本語表記（例: 「シルバー・レガシー」）へ修正してください。".to_string()),
+                        suggestion: None,
                     });
                 }
             }
         }
 
-        let noise_words = ["get", "gett", "むget", "oversized", "casual", "heavy", "stylish"];
-        for noise in &noise_words {
-            if text.contains(noise) {
-                issues.push(ProofreadIssue {
-                    line_number: line_num,
-                    category: "英単語ノイズ".to_string(),
-                    severity: "warning".to_string(),
-                    message: format!("日本語文脈に不要なアルファベットノイズ「{}」が混入しています。", noise),
-                    target_text: noise.to_string(),
-                    suggestion: Some("不要な英単語を削除するかカタカナ/日本語表現に修正してください。".to_string()),
-                });
+        // 2. 地の文におけるアルファベット英単語・ノイズ（例: heavy-duty（重厚）, casual 等）の包括的抽出
+        let mut idx = 0;
+        while idx < len {
+            if chars[idx].is_ascii_alphabetic() {
+                let start_e = idx;
+                let mut end_e = idx;
+                while end_e < len && (chars[end_e].is_ascii_alphanumeric() || chars[end_e] == '-' || chars[end_e] == '_') {
+                    end_e += 1;
+                }
+
+                // 英単語の直後に （日本語） の注釈カッコが続いているか判定
+                let mut paren_jap = String::new();
+                let mut full_end = end_e;
+                if end_e < len && (chars[end_e] == '（' || chars[end_e] == '(') {
+                    let mut p_idx = end_e + 1;
+                    let close_char = if chars[end_e] == '（' { '）' } else { ')' };
+                    let mut buf = String::new();
+                    while p_idx < len && chars[p_idx] != close_char && chars[p_idx] != '\n' {
+                        buf.push(chars[p_idx]);
+                        p_idx += 1;
+                    }
+                    if p_idx < len && chars[p_idx] == close_char && !buf.trim().is_empty() {
+                        paren_jap = buf.trim().to_string();
+                        full_end = p_idx + 1;
+                    }
+                }
+
+                let word_target: String = chars[start_e..full_end].iter().collect();
+                let base_eng: String = chars[start_e..end_e].iter().collect();
+
+                if !paren_jap.is_empty() {
+                    if !issues.iter().any(|iss| iss.target_text == word_target) {
+                        issues.push(ProofreadIssue {
+                            line_number: line_num,
+                            category: "英単語ノイズ".to_string(),
+                            severity: "warning".to_string(),
+                            message: format!("日本語文脈に不要なアルファベット表記「{}」が含まれています。カッコ内の日本語「{}」へ置換統一してください。", word_target, paren_jap),
+                            target_text: word_target,
+                            suggestion: Some(paren_jap),
+                        });
+                    }
+                } else if base_eng.len() >= 3 && !base_eng.chars().all(|c| c.is_ascii_uppercase()) {
+                    let known_noise = ["get", "gett", "むget", "oversized", "casual", "heavy", "stylish", "heavy-duty"];
+                    if known_noise.contains(&base_eng.as_str()) || base_eng.contains("get") {
+                        if !issues.iter().any(|iss| iss.target_text == base_eng) {
+                            issues.push(ProofreadIssue {
+                                line_number: line_num,
+                                category: "英単語ノイズ".to_string(),
+                                severity: "warning".to_string(),
+                                message: format!("日本語地の文に不要なアルファベットノイズ「{}」が混入しています。", base_eng),
+                                target_text: base_eng,
+                                suggestion: None,
+                            });
+                        }
+                    }
+                }
+
+                idx = full_end;
+            } else {
+                idx += 1;
             }
         }
     }
