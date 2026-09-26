@@ -318,6 +318,50 @@ impl SuikoEngine {
                 idx += 1;
             }
         }
+
+        // 3. カタカナ破片・単語 + （日本語但し書き/注釈） の検出 (例: カ（不器用）)
+        for i in 0..len {
+            if chars[i] == '（' || chars[i] == '(' {
+                let close_char = if chars[i] == '（' { '）' } else { ')' };
+                let mut start_k = i;
+                let mut kata_buf = String::new();
+                while start_k > 0 {
+                    let c = chars[start_k - 1];
+                    if (c >= '\u{30A0}' && c <= '\u{30FF}') || c == '・' || c == 'ー' {
+                        kata_buf.insert(0, c);
+                        start_k -= 1;
+                    } else {
+                        break;
+                    }
+                }
+
+                if !kata_buf.is_empty() && kata_buf.chars().count() <= 3 {
+                    let mut p_idx = i + 1;
+                    let mut inner_jap = String::new();
+                    while p_idx < len && chars[p_idx] != close_char && chars[p_idx] != '\n' {
+                        let c = chars[p_idx];
+                        if (c >= '\u{4E00}' && c <= '\u{9FFF}') || (c >= '\u{3040}' && c <= '\u{309F}') || (c >= '\u{30A0}' && c <= '\u{30FF}') {
+                            inner_jap.push(c);
+                        }
+                        p_idx += 1;
+                    }
+
+                    if p_idx < len && chars[p_idx] == close_char && inner_jap.chars().count() >= 2 {
+                        let full_snippet: String = chars[start_k..=p_idx].iter().collect();
+                        if !issues.iter().any(|iss| iss.target_text == full_snippet) {
+                            issues.push(ProofreadIssue {
+                                line_number: line_num,
+                                category: "注釈カッコ・表記崩れ".to_string(),
+                                severity: "warning".to_string(),
+                                message: format!("「{}」のようなカッコ但し書き・語句注釈による表記崩れを検出しました。カッコ内の意図された単語「{}」へ統一してください。", full_snippet, inner_jap),
+                                target_text: full_snippet,
+                                suggestion: Some(inner_jap),
+                            });
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /// 一文の長さチェック
