@@ -1,6 +1,6 @@
 [package]
 name = "zephyros"
-version = "0.7.10"
+version = "0.7.11"
 description = "Zephyros Novel Generator"
 authors = ["kurone-hinamori"]
 edition = "2021"

@@ -145,6 +145,41 @@ const syncToDisk = (projects: Project[]) => {
 };
 
 export class StoreManager {
+  private static memoryProjectsCache: Project[] | null = null;
+
+  /**
+   * localStorage への安全な保存（5MB容量制限フォールバック＆メモリキャッシュ保持）
+   */
+  private static safeSetProjectsLocalStorage(projects: Project[]): void {
+    this.memoryProjectsCache = projects;
+    try {
+      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+    } catch (e) {
+      console.warn('localStorage容量上限(5MB)を検出。メモリおよびディスク(projects.json)へ保存維持します:', e);
+      try {
+        const lightweightProjects = projects.map((p) => {
+          if (!p.novelData) return p;
+          return {
+            ...p,
+            novelData: {
+              ...p.novelData,
+              chapters: p.novelData.chapters.map((ch) => ({
+                ...ch,
+                scenes: ch.scenes.map((sc) => ({
+                  ...sc,
+                  content: sc.content ? sc.content.slice(0, 100) + '... (disk persisted)' : '',
+                  reviewComments: [],
+                })),
+              })),
+            },
+            editorLogs: (p.editorLogs || []).slice(-10),
+          };
+        });
+        localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(lightweightProjects));
+      } catch (_) {}
+    }
+  }
+
   /**
    * ディスク (appData) からのプロジェクト読み込み & 連動同期
    */
@@ -155,7 +190,7 @@ export class StoreManager {
         if (raw && raw.trim() !== '' && raw.trim() !== '[]') {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(parsed));
+            this.safeSetProjectsLocalStorage(parsed);
             return parsed;
           }
         }
@@ -172,6 +207,9 @@ export class StoreManager {
    * 全プロジェクトの取得
    */
   static getProjects(): Project[] {
+    if (this.memoryProjectsCache && this.memoryProjectsCache.length > 0) {
+      return this.memoryProjectsCache;
+    }
     const raw = localStorage.getItem(STORAGE_KEYS.PROJECTS);
     if (!raw) {
       // 旧データからの移行チェック
@@ -198,14 +236,16 @@ export class StoreManager {
       }
 
       const list = [initialProj];
-      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(list));
+      this.safeSetProjectsLocalStorage(list);
       localStorage.setItem(STORAGE_KEYS.ACTIVE_PROJECT_ID, initialProj.id);
       syncToDisk(list);
       return list;
     }
 
     try {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      this.memoryProjectsCache = parsed;
+      return parsed;
     } catch {
       return [];
     }
@@ -265,7 +305,7 @@ export class StoreManager {
 
     const projects = this.getProjects();
     const updatedList = [newProj, ...projects];
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(updatedList));
+    this.safeSetProjectsLocalStorage(updatedList);
     localStorage.setItem(STORAGE_KEYS.ACTIVE_PROJECT_ID, newProj.id);
     syncToDisk(updatedList);
     return newProj;
@@ -284,7 +324,7 @@ export class StoreManager {
     } else {
       projects.unshift(project);
     }
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+    this.safeSetProjectsLocalStorage(projects);
     syncToDisk(projects);
   }
 
@@ -293,7 +333,7 @@ export class StoreManager {
    */
   static deleteProject(id: string): void {
     const projects = this.getProjects().filter((p) => p.id !== id);
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+    this.safeSetProjectsLocalStorage(projects);
     syncToDisk(projects);
     if (this.getActiveProjectId() === id) {
       if (projects.length > 0) {
@@ -347,7 +387,7 @@ export class StoreManager {
 
     const projects = this.getProjects();
     const updatedList = [newProj, ...projects];
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(updatedList));
+    this.safeSetProjectsLocalStorage(updatedList);
     localStorage.setItem(STORAGE_KEYS.ACTIVE_PROJECT_ID, newProj.id);
     syncToDisk(updatedList);
     return newProj;
