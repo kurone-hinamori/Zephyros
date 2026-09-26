@@ -71,6 +71,9 @@ impl SuikoEngine {
 
             // 行単位チェック: ノイズ外国語・カタカナ固有名詞途切れ（「シルバー・レ（Silver Legacy）」等）
             Self::check_foreign_noise_and_truncation(line_num, trimmed, &mut issues);
+
+            // 行単位チェック: 孤立カタカナ＋動詞ノイズ（「アしなければならない」等）
+            Self::check_isolated_katakana_verbs(line_num, trimmed, &mut issues);
         }
 
         // 2. 文単位チェック（一文の長さ、読点密度）
@@ -358,6 +361,81 @@ impl SuikoEngine {
                                 suggestion: Some(inner_jap),
                             });
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    /// 孤立カタカナ＋動詞語尾のノイズ検出（例: 「アしなければならない」「カする」等）
+    fn check_isolated_katakana_verbs(line_num: usize, text: &str, issues: &mut Vec<ProofreadIssue>) {
+        let chars: Vec<char> = text.chars().collect();
+        let len = chars.len();
+
+        let verb_endings = [
+            "しなければ",
+            "しなきゃ",
+            "しなくては",
+            "する",
+            "した",
+            "している",
+            "された",
+            "される",
+            "すべき",
+            "しよう",
+            "され",
+            "して",
+            "しつつ",
+            "でき",
+            "できる",
+        ];
+
+        for i in 0..len {
+            let c = chars[i];
+            // カタカナ1文字判定
+            if c >= '\u{30A1}' && c <= '\u{30FA}' {
+                // 前の文字がカタカナでないこと
+                let is_prev_kata = if i > 0 {
+                    let prev_c = chars[i - 1];
+                    (prev_c >= '\u{30A1}' && prev_c <= '\u{30FA}') || prev_c == 'ー' || prev_c == '・'
+                } else {
+                    false
+                };
+
+                // 次の文字がカタカナでないこと（単独の1文字カタカナ）
+                let is_next_kata = if i + 1 < len {
+                    let next_c = chars[i + 1];
+                    (next_c >= '\u{30A1}' && next_c <= '\u{30FA}') || next_c == 'ー' || next_c == '・'
+                } else {
+                    false
+                };
+
+                if is_prev_kata || is_next_kata {
+                    continue;
+                }
+
+                // 直後の文字列
+                let rest: String = chars[i + 1..].iter().collect();
+
+                for ending in &verb_endings {
+                    if rest.starts_with(ending) {
+                        let target_len = (1 + ending.chars().count()).min(12);
+                        let snippet: String = chars[i..(i + target_len).min(len)].iter().collect();
+
+                        if !issues.iter().any(|iss| iss.target_text == snippet) {
+                            issues.push(ProofreadIssue {
+                                line_number: line_num,
+                                category: "文章崩れ・孤立カタカナ".to_string(),
+                                severity: "error".to_string(),
+                                message: format!(
+                                    "「{}」のように一文字カタカナ＋動詞語尾（LLMトークン欠損・文法崩れノイズ）を検出しました。コンテクストを推定して正しい日本語表現に書き換えてください。",
+                                    snippet
+                                ),
+                                target_text: snippet,
+                                suggestion: None,
+                            });
+                        }
+                        break;
                     }
                 }
             }
