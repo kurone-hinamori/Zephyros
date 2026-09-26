@@ -142,7 +142,7 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
 
   const handleSaveTitle = (newTitle: string) => {
     if (!newTitle.trim() || !currentNovelData) return;
-    const cleanTitle = newTitle.trim();
+    const cleanTitle = NovelEngine.cleanTitleText(newTitle.trim());
     const oldTitle = currentNovelData.title;
     const updatedNovel: NovelData = {
       ...currentNovelData,
@@ -437,10 +437,10 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
       }
 
       const newNovel: NovelData = {
-        title: result.title,
-        subtitle: result.subtitle,
-        synopsis: result.synopsis,
-        outline: result.outline,
+        title: NovelEngine.cleanTitleText(result.title),
+        subtitle: NovelEngine.cleanForeignNoiseText(result.subtitle || ''),
+        synopsis: NovelEngine.cleanForeignNoiseText(result.synopsis || ''),
+        outline: NovelEngine.cleanForeignNoiseText(result.outline || ''),
         chapters: result.chapters,
         totalWordCount: 0,
         createdDate: new Date().toLocaleDateString(),

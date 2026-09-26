@@ -31,8 +31,9 @@ export const DEFAULT_SYSTEM_PROMPTS: SystemPrompts = {
    - 案1: 王道ライトノベル風タイトル（例: 『〜〜だけど、〜〜します』）
    - 案2: ショート＆スタイリッシュタイトル（2〜6文字のシンプルで鋭い題名）
    - 案3: お題キーワード強調タイトル（お題アイテム・武器・職業を前面に出した題名）
-   - 案4: ドラマティック・バトル/スローライフ風タイトル
-   - 案5: キャラクター・相棒フィーチャー風タイトル
+    - 案4: ドラマティック・バトル/スローライフ風タイトル
+    - 案5: キャラクター・相棒フィーチャー風タイトル
+4. **【日本語厳守・英語ノイズ禁止】**: タイトル末尾に余計な英語・外国語（例: 'de destruction', 'destruction', 'episode 1' 等）を付与することは絶対禁止です。必ず純粋な日本語（ひらがな・カタカナ・漢字）で構成してください。
 
 思考プロセス(<think>)や解説文は一切含めず、必ず以下のJSON形式でのみ出力してください：
 {
@@ -56,6 +57,7 @@ export const DEFAULT_SYSTEM_PROMPTS: SystemPrompts = {
 5. characters (3〜5名), worldBuilding (3〜5件), geography (2〜4件), terms (3〜5件), rubies (3〜5件) を必ず全てユーザーのお題・あらすじに沿って充実させて出力してください。
 6. **【あらすじ本文のコピー禁止】**: worldBuildingのcontent、geographyのdescription、termsのdescription、charactersのbackgroundに【あらすじ全文】や【詳細指定の文章】をそのままコピーして使い回すことは絶対禁止です。各項目（設定、地名、用語、キャラクター）ごとに、その項目固有の短い個別解説（30〜100字程度）を記述してください。
 7. **【お題キーワードの100%準拠】**: プロンプトの例示用単語や他作品の設定（サキュバス、別ジャンルのテンプレ等）を勝手に混ぜず、必ず今回与えられた【お題タグ】と【詳細指定】のみから登場人物名・設定を作成してください。
+8. **【日本語厳守・外国語ノイズ・トークン漏れの絶対禁止】**: タイトル、登場人物名、性格、外見、背景、世界観設定、地名、用語解説のすべてにおいて、不自然な英単語や外国語フラグメント（例: 'de destruction', 'heavy', 'ins' 等）を混入させることは固く禁止します。すべての項目を100%自然な日本語（漢字・ひらがな・カタカナ）で記述してください。
 
 必ず以下のJSON形式のみを出力してください：
 {
@@ -180,6 +182,7 @@ export const DEFAULT_SYSTEM_PROMPTS: SystemPrompts = {
    - "magic": 魔法・スキル・能力・呪文・結界
    - "dungeon": ダンジョン階層・部屋・罠・セーフゾーン
    - "system": 社会制度・ギルド・通貨・階級・国家
+5. **【日本語厳守・外国語ノイズ・トークン漏れの絶対禁止】**: 登場人物の名前・性格・外見・背景、品物・地名・用語のすべての名称や説明文において、アルファベットや外国語ノイズ（例: 'heavy', 'ins', 'de' 等）を混入させることは固く禁止します。すべての項目を100%自然な日本語（漢字・ひらがな・カタカナ）で記述してください。
 
 必ず以下のJSON形式でのみ出力してください：
 
@@ -237,6 +240,7 @@ export const R18_SYSTEM_PROMPTS: SystemPrompts = {
 1. 10〜25文字程度の短く印象的な【書籍タイトル】を作成してください。
 2. あらすじ説明文そのままの長文を出力することは絶対禁止です。必ず出版書籍の表紙に躍るような魅惑的でキャッチーなタイトル（題名）にしてください。
 3. 5種類の異なる切り口のバリエーションを取り揃えてください。
+4. **【日本語厳守・英語ノイズ禁止】**: タイトル末尾に余計な英語・外国語（例: 'de destruction', 'destruction' 等）を付与することは絶対禁止です。必ず純粋な日本語（ひらがな・カタカナ・漢字）で構成してください。
 
 思考プロセス(<think>)や解説文は一切含めず、必ず以下のJSON形式でのみ出力してください：
 {
@@ -260,6 +264,7 @@ export const R18_SYSTEM_PROMPTS: SystemPrompts = {
 4. **登場人物（characters）はユーザーの【詳細指定】に書かれた性別・立場・配役・状態（女性主人公なら性別・一人称「私」等）を完璧に尊重し、合計 3〜5 名を作成してください。主人公の性別や設定を勝手に男性等に改変することは絶対禁止です。**
 5. characters (3〜5名), worldBuilding (3〜5件), geography (2〜4件), terms (3〜5件), rubies (3〜5件) を必ず全て充実させて出力してください。
 6. **【あらすじ本文のコピー禁止】**: worldBuildingのcontent、geographyのdescription、termsのdescription、charactersのbackgroundに【あらすじ全文】や【詳細指定の文章】をそのままコピーして使い回すことは絶対禁止です。各項目（設定、地名、用語、キャラクター）ごとに、その項目固有の短い個別解説（30〜100字程度）を記述してください。
+7. **【日本語厳守・外国語ノイズ・トークン漏れの絶対禁止】**: タイトル、登場人物名、性格、外見、背景、世界観設定、地名、用語解説のすべてにおいて、不自然な英単語や外国語フラグメント（例: 'de destruction', 'heavy', 'ins' 等）を混入させることは固く禁止します。すべての項目を100%自然な日本語（漢字・ひらがな・カタカナ）で記述してください。
 
 必ず以下のJSON形式のみを出力してください：
 {
@@ -1101,8 +1106,7 @@ ${JSON.stringify(draftData, null, 2)}
 
     // タイトルのクリーンアップ（末尾の助詞・ノイズの除去）
     let cleanTitle = (step1Parsed.title || '').trim();
-    cleanTitle = NovelEngine.cleanForeignNoiseText(cleanTitle);
-    cleanTitle = cleanTitle.replace(/(?:[はがをでにてとヘよりから]|\.\.\.|\dots|…)+$/, '').trim();
+    cleanTitle = NovelEngine.cleanTitleText(cleanTitle);
 
     // タイトルの有効性チェック（3〜45文字、改行なし、プロンプト文そのままの丸コピーでないこと）
     const isValidTitle =
@@ -1127,7 +1131,7 @@ ${JSON.stringify(draftData, null, 2)}
           aiSettings
         );
         if (generatedTitles && generatedTitles.length > 0) {
-          cleanTitle = generatedTitles[0];
+          cleanTitle = NovelEngine.cleanTitleText(generatedTitles[0]);
         }
       } catch (tErr) {
         console.warn('generateTitles fallback in generateOutline failed:', tErr);
@@ -1142,7 +1146,9 @@ ${JSON.stringify(draftData, null, 2)}
         }
       }
     }
-    step1Parsed.title = cleanTitle;
+    step1Parsed.title = NovelEngine.cleanTitleText(cleanTitle);
+    step1Parsed.subtitle = NovelEngine.cleanForeignNoiseText(step1Parsed.subtitle || '');
+    step1Parsed.synopsis = NovelEngine.cleanForeignNoiseText(step1Parsed.synopsis || '');
 
     // 登場人物の重複登録の排除・フェールセーフ
     rawChars = NovelEngine.deduplicateCharacters(rawChars);
@@ -1259,13 +1265,15 @@ ${JSON.stringify(draftData, null, 2)}
       characters: NovelEngine.deduplicateCharacters(
         rawChars.map((c: any, idx: number) => {
           let { cleanName, extractedRole } = NovelEngine.sanitizeCharacterName(c.name || `登場人物${idx + 1}`);
-          const role = c.role || extractedRole || '主要人物';
+          cleanName = NovelEngine.cleanForeignNoiseText(cleanName);
+          const role = NovelEngine.cleanForeignNoiseText(c.role || extractedRole || '主要人物');
           let appearance = c.appearance && !NovelEngine.isSynopsisCopy(c.appearance, promptSettings, step1Parsed.synopsis)
-            ? c.appearance
+            ? NovelEngine.cleanForeignNoiseText(c.appearance)
             : `「${cleanName}」の外見・容姿特徴`;
           let background = c.background && !NovelEngine.isSynopsisCopy(c.background, promptSettings, step1Parsed.synopsis)
-            ? c.background
+            ? NovelEngine.cleanForeignNoiseText(c.background)
             : `「${cleanName}」の作中における人物背景・目的`;
+          let personality = NovelEngine.cleanForeignNoiseText(c.personality || '初期プロットにて設定');
 
           // お題・あらすじに指定されていない無関係なキーワード (サキュバス等) が全年齢作品に誤混入した場合のクレンジング
           const promptFullText = `${promptSettings.storyConcept} ${promptSettings.detailedPrompt} ${promptSettings.themes.join(' ')}`;
@@ -1288,7 +1296,7 @@ ${JSON.stringify(draftData, null, 2)}
             firstPerson: NovelEngine.sanitizePronoun(c.firstPerson, '私', false),
             secondPerson: NovelEngine.sanitizePronoun(c.secondPerson, 'あなた', true),
             appearance,
-            personality: c.personality || '初期プロットにて設定',
+            personality,
             background,
             illustrationPrompt,
             updatedEpisode: '【初期プロット策定時】',
@@ -1296,8 +1304,8 @@ ${JSON.stringify(draftData, null, 2)}
         })
       ),
       worldBuilding: rawWorld.map((w: any, idx: number) => {
-        const title = (w.title || w.name || `設定${idx + 1}`).trim();
-        let content = (w.content || w.description || '').trim();
+        const title = NovelEngine.cleanForeignNoiseText((w.title || w.name || `設定${idx + 1}`).trim());
+        let content = NovelEngine.cleanForeignNoiseText((w.content || w.description || '').trim());
         if (!content || NovelEngine.isSynopsisCopy(content, promptSettings, step1Parsed.synopsis)) {
           content = `「${title}」に関する作中設定・詳細解説`;
         }
@@ -1310,8 +1318,8 @@ ${JSON.stringify(draftData, null, 2)}
         };
       }),
       geography: rawGeo.map((g: any, idx: number) => {
-        const name = (g.name || g.title || `地名${idx + 1}`).trim();
-        let description = (g.description || g.content || '').trim();
+        const name = NovelEngine.cleanForeignNoiseText((g.name || g.title || `地名${idx + 1}`).trim());
+        let description = NovelEngine.cleanForeignNoiseText((g.description || g.content || '').trim());
         if (!description || NovelEngine.isSynopsisCopy(description, promptSettings, step1Parsed.synopsis)) {
           description = `「${name}」に関する舞台・地理の解説`;
         }
@@ -1326,9 +1334,9 @@ ${JSON.stringify(draftData, null, 2)}
 
     const initialGlossary: Glossary = {
       terms: rawTerms.map((t: any, idx: number) => {
-        const term = (t.term || t.name || '').trim();
-        const reading = NovelEngine.toHiragana(t.reading || t.ruby || '');
-        let description = (t.description || t.meaning || t.content || '').trim();
+        const term = NovelEngine.cleanForeignNoiseText((t.term || t.name || '').trim());
+        const reading = NovelEngine.toHiragana(NovelEngine.cleanForeignNoiseText(t.reading || t.ruby || ''));
+        let description = NovelEngine.cleanForeignNoiseText((t.description || t.meaning || t.content || '').trim());
         if (!description || NovelEngine.isSynopsisCopy(description, promptSettings, step1Parsed.synopsis)) {
           description = `「${term}」の意味・作中での定義解説`;
         }
@@ -1342,8 +1350,8 @@ ${JSON.stringify(draftData, null, 2)}
         };
       }),
       rubies: rawRubies.map((r: any, idx: number) => {
-        const kanji = (r.kanji || '').trim();
-        const ruby = NovelEngine.toHiragana((r.ruby || '').trim());
+        const kanji = NovelEngine.cleanForeignNoiseText((r.kanji || '').trim());
+        const ruby = NovelEngine.toHiragana(NovelEngine.cleanForeignNoiseText((r.ruby || '').trim()));
         return {
           id: `ruby-init-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 4)}`,
           kanji: kanji || '漢字',
@@ -1353,6 +1361,8 @@ ${JSON.stringify(draftData, null, 2)}
         };
       }),
     };
+
+    const { cleanedBible: purifiedInitBible, cleanedGlossary: purifiedInitGlossary } = NovelEngine.cleanSettingBibleAndGlossary(initialBible, initialGlossary);
 
     // --- STEP 2: 話ごとのプロット順次生成 (第 1 話〜第 N 話まで分割Call) ---
     const chapters: Chapter[] = [];
@@ -1422,8 +1432,8 @@ ${prevChapterTitles || 'ここから物語が始まります。'}
 
       const chapterScenes = rawScenes.map((sc: any, sIdx: number) => ({
         id: sIdx + 1,
-        title: sc.title || `シーン${sIdx + 1}`,
-        summary: sc.summary || `${step2Parsed.title || ''} シーン${sIdx + 1}`,
+        title: NovelEngine.cleanForeignNoiseText(sc.title || `シーン${sIdx + 1}`),
+        summary: NovelEngine.cleanForeignNoiseText(sc.summary || `${step2Parsed.title || ''} シーン${sIdx + 1}`),
         content: '',
         status: 'pending' as const,
         wordCount: 0,
@@ -1432,8 +1442,8 @@ ${prevChapterTitles || 'ここから物語が始まります。'}
 
       const newChapter: Chapter = {
         id: chNum,
-        title: step2Parsed.title || `第${chNum}話`,
-        synopsis: step2Parsed.synopsis || `第${chNum}話の物語。`,
+        title: NovelEngine.cleanForeignNoiseText(step2Parsed.title || `第${chNum}話`),
+        synopsis: NovelEngine.cleanForeignNoiseText(step2Parsed.synopsis || `第${chNum}話の物語。`),
         scenes: chapterScenes,
         status: 'pending' as const,
         wordCount: 0,
@@ -1450,13 +1460,13 @@ ${prevChapterTitles || 'ここから物語が始まります。'}
     if (onProgress) onProgress('全プロットおよび初期設定データの検証・統合完了。');
 
     return {
-      title: step1Parsed.title || `${promptSettings.themes.join('×')}の物語`,
-      subtitle: step1Parsed.subtitle || '',
-      synopsis: step1Parsed.synopsis || promptSettings.storyConcept,
-      outline: step1Parsed.synopsis || promptSettings.storyConcept,
+      title: NovelEngine.cleanTitleText(step1Parsed.title || `${promptSettings.themes.join('×')}の物語`),
+      subtitle: NovelEngine.cleanForeignNoiseText(step1Parsed.subtitle || ''),
+      synopsis: NovelEngine.cleanForeignNoiseText(step1Parsed.synopsis || promptSettings.storyConcept),
+      outline: NovelEngine.cleanForeignNoiseText(step1Parsed.synopsis || promptSettings.storyConcept),
       chapters,
-      initialBible,
-      initialGlossary,
+      initialBible: purifiedInitBible,
+      initialGlossary: purifiedInitGlossary,
     };
   }
 
@@ -1610,7 +1620,8 @@ ${chapterSummaries}
       });
     }
 
-    return { updatedBible, importedCount };
+    const { cleanedBible } = NovelEngine.cleanSettingBibleAndGlossary(updatedBible, { terms: [], rubies: [] });
+    return { updatedBible: cleanedBible, importedCount };
   }
 
   /**
@@ -2540,7 +2551,8 @@ ${draftContent.slice(0, 10000)}
       console.warn('Extraction of setting delta failed, skipping auto-update:', e);
     }
 
-    return { updatedBible, updatedGlossary, updateLogs };
+    const { cleanedBible, cleanedGlossary } = NovelEngine.cleanSettingBibleAndGlossary(updatedBible, updatedGlossary);
+    return { updatedBible: cleanedBible, updatedGlossary: cleanedGlossary, updateLogs };
   }
 
   /**
@@ -2683,11 +2695,22 @@ ${draftContent.slice(0, 10000)}
     // 2.5 途切れた四字熟語・慣用句の自動補正（例: 「天真爛」→「天真爛漫」）
     clean = clean.replace(/天真爛(?!漫)/g, '天真爛漫');
 
-    // 3. 地の文に挟まる不要な浮遊英単語（例: heavy, casual, oversized, enjoy）の除去
-    clean = clean.replace(/\b(?:heavy|casual|oversized|stylish|cool|enjoy)\b\s*/gi, '');
+    // 2.6 トークナイザー破損表現の修復（例: 「繊 heavy 且つ」→「繊細且つ」）
+    clean = clean.replace(/繊\s*(?:heavy)?\s*([且か]つ)/gi, '繊細$1');
+    clean = clean.replace(/繊\s+([且か]つ)/g, '繊細$1');
 
-    // 4. 日本語単語 + ASCII文字（例: 「リリスs」「姫様s」）の末尾英字除去（Unicode安全判定）
-    clean = clean.replace(/([ァ-ヴー一-龠ぁ-ん]{2,})[a-zA-Z]+(?=[^a-zA-Z]|$)/g, '$1');
+    // 3. 地の文に挟まる不要な浮遊英単語（例: heavy, casual, oversized, stylish, cool, enjoy, sexy, duty, ins, destruction, style）の除去
+    clean = clean.replace(/\b(?:heavy|casual|oversized|stylish|cool|enjoy|sexy|duty|ins|destruction|style)\b\s*/gi, '');
+
+    // 3.5 日本語文字に挟まれた孤立小文字英単語（例: 「繊 heavy 且つ」や「力insの」等で残った英単語）の純化
+    clean = clean.replace(/(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF])\s*([a-z]{1,15})\s*(?=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF])/g, (_m, word) => {
+      const lower = word.toLowerCase();
+      if (['ai', 'vr', 'pc', 'hp', 'mp', 'ui', 'exp'].includes(lower)) return ` ${word} `;
+      return '';
+    });
+
+    // 4. 日本語単語 + ASCII文字（例: 「リリスs」「姫様s」「力ins」）の末尾英字除去（Unicode安全判定: 1文字以上に対応）
+    clean = clean.replace(/([ァ-ヴー一-龠ぁ-ん]{1,})[a-zA-Z]{1,6}(?=[^a-zA-Z]|$|[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF])/g, '$1');
 
     // 5. 同一単語のカッコ重複（例: 「リリス（リリス）」）の自動統合
     clean = clean.replace(/([ァ-ヴー一-龠ぁ-ん]{2,})[\(（]\1[\)）]/g, '$1');
@@ -2745,6 +2768,93 @@ ${draftContent.slice(0, 10000)}
     clean = clean.replace(/リゲット[a-zA-Z]*/g, 'リリス');
 
     return clean;
+  }
+
+  /**
+   * 小説タイトルのクレンジング（末尾の外国語ノイズ・助詞・記号等の完全除去）
+   * 例: 「無能の魔剣使い de destruction」→「無能の魔剣使い」
+   */
+  public static cleanTitleText(rawTitle: string): string {
+    if (!rawTitle || typeof rawTitle !== 'string') return '';
+    let clean = this.cleanForeignNoiseText(rawTitle.trim());
+
+    // 1. 先頭・末尾の引用符やカギカッコの除去
+    clean = clean.replace(/^[「『"“【]+|[」』"”】]+$/g, '').trim();
+
+    // 2. 日本語を含むタイトルにおいて、末尾に付着した外国語フレーズ（例: " de destruction", " - The Beginning", " : Rebellion", " of death" 等）を除去
+    if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(clean)) {
+      clean = clean.replace(/(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3001-\u303F])[\s\-_:：〜～]+[a-zA-Z0-9\s'’\-〜～]+$/i, '').trim();
+      clean = clean.replace(/(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF])\s+(?:de|of|the|and|in|on|at|for|with|a|an|to)\s+[a-zA-Z0-9\s'’-]+$/i, '').trim();
+    }
+
+    // 3. タイトル末尾の不自然な助詞・三連ドットの除去
+    clean = clean.replace(/(?:[はがをでにてとヘよりから]|\.\.\.|\dots|…)+$/, '').trim();
+
+    return clean;
+  }
+
+  /**
+   * 設定資料集（登場人物・世界観・地名・用語集）の全項目から外国語ノイズ・不要メタ情報を自動クレンジング
+   */
+  public static cleanSettingBibleAndGlossary(
+    bible: SettingBible,
+    glossary: Glossary
+  ): { cleanedBible: SettingBible; cleanedGlossary: Glossary } {
+    const cleanedBible: SettingBible = JSON.parse(JSON.stringify(bible));
+    const cleanedGlossary: Glossary = JSON.parse(JSON.stringify(glossary));
+
+    // 1. キャラクター設定の全フィールドクレンジング
+    cleanedBible.characters = (cleanedBible.characters || []).map((c) => {
+      const { cleanName, extractedRole } = this.sanitizeCharacterName(c.name || '');
+      const purifiedName = this.cleanForeignNoiseText(cleanName);
+      const role = this.cleanForeignNoiseText(c.role || extractedRole || '主要人物');
+      const appearance = this.cleanForeignNoiseText(c.appearance || '');
+      const personality = this.cleanForeignNoiseText(c.personality || '');
+      const background = this.cleanForeignNoiseText(c.background || '');
+      const firstPerson = this.sanitizePronoun(this.cleanForeignNoiseText(c.firstPerson || ''), '私', false);
+      const secondPerson = this.sanitizePronoun(this.cleanForeignNoiseText(c.secondPerson || ''), 'あなた', true);
+
+      return {
+        ...c,
+        name: purifiedName,
+        role,
+        appearance,
+        personality,
+        background,
+        firstPerson,
+        secondPerson,
+        illustrationPrompt: this.buildIllustrationPrompt({
+          name: purifiedName,
+          appearance,
+          role,
+          illustrationPrompt: c.illustrationPrompt,
+        }),
+      };
+    });
+
+    // 2. 世界観設定の全フィールドクレンジング
+    cleanedBible.worldBuilding = (cleanedBible.worldBuilding || []).map((w) => ({
+      ...w,
+      title: this.cleanForeignNoiseText(w.title || ''),
+      content: this.cleanForeignNoiseText(w.content || ''),
+    }));
+
+    // 3. 地理設定の全フィールドクレンジング
+    cleanedBible.geography = (cleanedBible.geography || []).map((g) => ({
+      ...g,
+      name: this.cleanForeignNoiseText(g.name || ''),
+      description: this.cleanForeignNoiseText(g.description || ''),
+    }));
+
+    // 4. 用語集の全フィールドクレンジング
+    cleanedGlossary.terms = (cleanedGlossary.terms || []).map((t) => ({
+      ...t,
+      term: this.cleanForeignNoiseText(t.term || ''),
+      reading: this.toHiragana(this.cleanForeignNoiseText(t.reading || '')),
+      description: this.cleanForeignNoiseText(t.description || ''),
+    }));
+
+    return { cleanedBible, cleanedGlossary };
   }
 
   /**
@@ -3093,11 +3203,13 @@ ${suikoResult.summaryPrompt}
     // タイトル専用のクレンジング ＆ 特殊文字・指示文除去
     const cleanTitleCandidate = (raw: string): string | null => {
       if (!raw || typeof raw !== 'string') return null;
-      let clean = raw
+      let clean = NovelEngine.cleanTitleText(raw);
+      clean = clean
         .replace(/^[0-9一二三四五①②③④⑤\.\-\*\s#【『"「]+/, '')
         .replace(/[」』"】]+$/, '')
         .replace(/^(?:タイトル|題名|案\d*|候補\d*)[：:]\s*/, '')
         .trim();
+      clean = NovelEngine.cleanTitleText(clean);
 
       if (!clean) return null;
       const lower = clean.toLowerCase();
@@ -3444,8 +3556,10 @@ ${suikoResult.summaryPrompt}
     promptSettings?: PromptSettings,
     synopsis?: string
   ): { cleanedBible: SettingBible; cleanedGlossary: Glossary; removedCount: number } {
-    const cleanedBible: SettingBible = JSON.parse(JSON.stringify(bible));
-    const cleanedGlossary: Glossary = JSON.parse(JSON.stringify(glossary));
+    // 1. 全フィールドの外国語ノイズ・トークン漏れ・文字化けの自動校閲・純化
+    const { cleanedBible: bPurified, cleanedGlossary: gPurified } = this.cleanSettingBibleAndGlossary(bible, glossary);
+    let cleanedBible: SettingBible = bPurified;
+    let cleanedGlossary: Glossary = gPurified;
     let removedCount = 0;
 
     const initialWbCount = cleanedBible.worldBuilding.length;
@@ -3456,7 +3570,7 @@ ${suikoResult.summaryPrompt}
         if (this.isSynopsisCopy(content, promptSettings, synopsis)) {
           content = `「${w.title.trim()}」に関する作中設定・詳細解説`;
         }
-        return { ...w, content };
+        return { ...w, title: this.cleanForeignNoiseText(w.title), content: this.cleanForeignNoiseText(content) };
       });
     removedCount += (initialWbCount - cleanedBible.worldBuilding.length);
 
@@ -3466,10 +3580,11 @@ ${suikoResult.summaryPrompt}
       .filter((c) => !this.isJunkTitle(c.name))
       .map((c) => {
         const { cleanName, extractedRole } = this.sanitizeCharacterName(c.name);
+        const purifiedName = this.cleanForeignNoiseText(cleanName);
         const firstPerson = this.sanitizePronoun(c.firstPerson, '私', false);
         const secondPerson = this.sanitizePronoun(c.secondPerson, 'あなた', true);
         const illustrationPrompt = this.buildIllustrationPrompt({
-          name: cleanName,
+          name: purifiedName,
           appearance: c.appearance,
           role: c.role || extractedRole,
           illustrationPrompt: c.illustrationPrompt,
@@ -3477,21 +3592,23 @@ ${suikoResult.summaryPrompt}
 
         let background = (c.background || '').trim();
         if (this.isSynopsisCopy(background, promptSettings, synopsis)) {
-          background = `「${cleanName}」の作中における人物背景・目的`;
+          background = `「${purifiedName}」の作中における人物背景・目的`;
         }
         let appearance = (c.appearance || '').trim();
         if (this.isSynopsisCopy(appearance, promptSettings, synopsis)) {
-          appearance = `「${cleanName}」の外見・容姿特徴`;
+          appearance = `「${purifiedName}」の外見・容姿特徴`;
         }
+        const personality = this.cleanForeignNoiseText(c.personality || '初期プロットにて設定');
 
         return {
           ...c,
-          name: cleanName,
-          role: c.role || extractedRole || '登場人物',
+          name: purifiedName,
+          role: this.cleanForeignNoiseText(c.role || extractedRole || '登場人物'),
           firstPerson,
           secondPerson,
-          background,
-          appearance,
+          personality,
+          background: this.cleanForeignNoiseText(background),
+          appearance: this.cleanForeignNoiseText(appearance),
           illustrationPrompt,
         };
       });
@@ -3502,11 +3619,12 @@ ${suikoResult.summaryPrompt}
     cleanedBible.geography = cleanedBible.geography
       .filter((g) => !this.isJunkTitle(g.name))
       .map((g) => {
+        const cleanName = this.cleanForeignNoiseText(g.name.trim());
         let description = (g.description || '').trim();
         if (this.isSynopsisCopy(description, promptSettings, synopsis)) {
-          description = `「${g.name.trim()}」に関する舞台・地理の解説`;
+          description = `「${cleanName}」に関する舞台・地理の解説`;
         }
-        return { ...g, description };
+        return { ...g, name: cleanName, description: this.cleanForeignNoiseText(description) };
       });
     removedCount += (initialGeoCount - cleanedBible.geography.length);
 
@@ -3514,11 +3632,12 @@ ${suikoResult.summaryPrompt}
     cleanedGlossary.terms = cleanedGlossary.terms
       .filter((t) => !this.isJunkTitle(t.term))
       .map((t) => {
+        const cleanTerm = this.cleanForeignNoiseText(t.term.trim());
         let description = (t.description || '').trim();
         if (this.isSynopsisCopy(description, promptSettings, synopsis)) {
-          description = `「${t.term.trim()}」の意味・作中での定義解説`;
+          description = `「${cleanTerm}」の意味・作中での定義解説`;
         }
-        return { ...t, description };
+        return { ...t, term: cleanTerm, description: this.cleanForeignNoiseText(description) };
       });
     removedCount += (initialTermCount - cleanedGlossary.terms.length);
 

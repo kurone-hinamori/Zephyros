@@ -54,7 +54,7 @@ export const SettingBibleView: React.FC<SettingBibleViewProps> = ({
       onSave(cleanedBible);
       if (onSaveGlossary && glossary) onSaveGlossary(cleanedGlossary);
     }
-    alert(`🧹 ゴミ設定の掃除と、登場人物の一人称・二人称・挿絵タグの自動整形を完了しました！ (${removedCount > 0 ? `${removedCount}件のゴミ削除・` : ''}整形完了)`);
+    alert(`🧹 設定資料の校閲・ゴミ掃除を完了しました！\n・英単語/外国語ノイズ・文字化けの自動クレンジング\n・一人称/二人称/挿絵タグの自動整形\n${removedCount > 0 ? `・${removedCount}件の不要なゴミ設定を削除` : '・ゴミ設定なし'}`);
   };
 
   const handleSave = () => {
@@ -87,14 +87,19 @@ export const SettingBibleView: React.FC<SettingBibleViewProps> = ({
   const handleSaveChar = () => {
     if (!editingCharacter || !editingCharacter.name.trim()) return;
     const { cleanName, extractedRole } = NovelEngine.sanitizeCharacterName(editingCharacter.name);
+    const purifiedName = NovelEngine.cleanForeignNoiseText(cleanName);
     const sanitizedChar: CharacterSetting = {
       ...editingCharacter,
-      name: cleanName,
-      role: editingCharacter.role || extractedRole || '主要登場人物',
+      name: purifiedName,
+      ruby: NovelEngine.toHiragana(editingCharacter.ruby || ''),
+      role: NovelEngine.cleanForeignNoiseText(editingCharacter.role || extractedRole || '主要登場人物'),
+      appearance: NovelEngine.cleanForeignNoiseText(editingCharacter.appearance || ''),
+      personality: NovelEngine.cleanForeignNoiseText(editingCharacter.personality || ''),
+      background: NovelEngine.cleanForeignNoiseText(editingCharacter.background || ''),
       firstPerson: NovelEngine.sanitizePronoun(editingCharacter.firstPerson, '私', false),
       secondPerson: NovelEngine.sanitizePronoun(editingCharacter.secondPerson, 'あなた', true),
       illustrationPrompt: NovelEngine.buildIllustrationPrompt({
-        name: cleanName,
+        name: purifiedName,
         appearance: editingCharacter.appearance,
         role: editingCharacter.role || extractedRole,
         illustrationPrompt: editingCharacter.illustrationPrompt,
@@ -137,10 +142,15 @@ export const SettingBibleView: React.FC<SettingBibleViewProps> = ({
 
   const handleSaveWorld = () => {
     if (!editingWorld || !editingWorld.title.trim()) return;
-    const exists = bibleState.worldBuilding.some((w) => w.id === editingWorld.id);
+    const cleanWorld: WorldSetting = {
+      ...editingWorld,
+      title: NovelEngine.cleanForeignNoiseText(editingWorld.title.trim()),
+      content: NovelEngine.cleanForeignNoiseText(editingWorld.content || ''),
+    };
+    const exists = bibleState.worldBuilding.some((w) => w.id === cleanWorld.id);
     const newWorld = exists
-      ? bibleState.worldBuilding.map((w) => (w.id === editingWorld.id ? editingWorld : w))
-      : [...bibleState.worldBuilding, editingWorld];
+      ? bibleState.worldBuilding.map((w) => (w.id === cleanWorld.id ? cleanWorld : w))
+      : [...bibleState.worldBuilding, cleanWorld];
     const updated = { ...bibleState, worldBuilding: newWorld };
     setBibleState(updated);
     onSave(updated);
@@ -172,10 +182,15 @@ export const SettingBibleView: React.FC<SettingBibleViewProps> = ({
 
   const handleSaveGeo = () => {
     if (!editingGeo || !editingGeo.name.trim()) return;
-    const exists = bibleState.geography.some((g) => g.id === editingGeo.id);
+    const cleanGeo: LocationSetting = {
+      ...editingGeo,
+      name: NovelEngine.cleanForeignNoiseText(editingGeo.name.trim()),
+      description: NovelEngine.cleanForeignNoiseText(editingGeo.description || ''),
+    };
+    const exists = bibleState.geography.some((g) => g.id === cleanGeo.id);
     const newGeo = exists
-      ? bibleState.geography.map((g) => (g.id === editingGeo.id ? editingGeo : g))
-      : [...bibleState.geography, editingGeo];
+      ? bibleState.geography.map((g) => (g.id === cleanGeo.id ? cleanGeo : g))
+      : [...bibleState.geography, cleanGeo];
     const updated = { ...bibleState, geography: newGeo };
     setBibleState(updated);
     onSave(updated);
@@ -209,10 +224,10 @@ export const SettingBibleView: React.FC<SettingBibleViewProps> = ({
           <button
             onClick={handleCleanJunk}
             className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-200 font-semibold text-xs transition-colors"
-            title="会話フレーズや文章断片などのゴミ設定を一括削除・整理"
+            title="英単語・文字化け等の外国語ノイズ校閲除去、不要なメタ用語や文章断片などのゴミ設定を一括削除・整理"
           >
             <Trash2 className="w-4 h-4 text-rose-400" />
-            <span>🧹 ゴミ設定を一括掃除</span>
+            <span>🧹 設定を校閲・ゴミ掃除</span>
           </button>
           {savedNotice && (
             <span className="text-xs text-emerald-400 flex items-center space-x-1">
