@@ -315,8 +315,8 @@ export function App() {
 
       {/* メインコンテンツエリア */}
       <main className="flex-1 p-6 overflow-y-auto">
-        {/* 初期画面: 作品一覧 */}
-        {activeTab === 'projects' && (
+        {/* 初期画面: 作品一覧・原稿閲覧 */}
+        {(activeTab === 'projects' || activeTab === 'manuscript') && (
           <ProjectListView
             projects={projects}
             activeProjectId={activeProjectId}

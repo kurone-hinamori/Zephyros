@@ -243,22 +243,26 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
   }, [currentSession]);
 
   // 親からの editorLogs または novelData/projectId 変更時の同期（別作品切り替え時に他作品のログが混入するのを完璧に遮断）
+  const prevProjectIdRef = useRef<string>(projectId);
   useEffect(() => {
-    const session = getProjectSession(projectId);
-    setIsGeneratingState(session.isGenerating);
-    setCurrentStatusState(session.currentStatus);
-    setActiveChapterIndexState(session.activeChapterIndex);
-    setActiveSceneIndexState(session.activeSceneIndex);
-    setStreamingTextState(session.streamingText);
+    if (prevProjectIdRef.current !== projectId) {
+      prevProjectIdRef.current = projectId;
+      const session = getProjectSession(projectId);
+      setIsGeneratingState(session.isGenerating);
+      setCurrentStatusState(session.currentStatus);
+      setActiveChapterIndexState(session.activeChapterIndex);
+      setActiveSceneIndexState(session.activeSceneIndex);
+      setStreamingTextState(session.streamingText);
 
-    const currentLogs = editorLogs || [];
-    setEditorLogState(currentLogs);
-    session.editorLog = currentLogs;
+      const currentLogs = editorLogs || [];
+      setEditorLogState(currentLogs);
+      session.editorLog = currentLogs;
 
-    if (!session.isGenerating && !session.streamingText) {
-      setCurrentStatusState('待機中');
+      if (!session.isGenerating && !session.streamingText) {
+        setCurrentStatusState('待機中');
+      }
     }
-  }, [projectId, editorLogs, novelData?.title]);
+  }, [projectId]);
 
   // ステート変更を作品別セッションおよび親へ同期永続化
   const setIsGenerating = (val: boolean) => {
@@ -307,15 +311,13 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
   };
 
   const setEditorLog = (updater: string[] | ((prev: string[]) => string[])) => {
-    setEditorLogState((prev) => {
-      const rawNext = typeof updater === 'function' ? updater(prev) : updater;
-      const formattedNext = rawNext.map(formatLogWithTimestamp);
-      currentSession.editorLog = formattedNext;
-      if (onSaveEditorLogs) {
-        onSaveEditorLogs(formattedNext, projectId);
-      }
-      return formattedNext;
-    });
+    const rawNext = typeof updater === 'function' ? updater(editorLog) : updater;
+    const formattedNext = rawNext.map(formatLogWithTimestamp);
+    currentSession.editorLog = formattedNext;
+    setEditorLogState(formattedNext);
+    if (onSaveEditorLogs) {
+      onSaveEditorLogs(formattedNext, projectId);
+    }
   };
 
   const isChapterCompleted = (ch: Chapter) => {
@@ -655,6 +657,16 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
               try {
                 localStorage.setItem(`zephyros_temp_draft_ch_${cIdx + 1}_sc_${sIdx + 1}`, draftedContent);
               } catch {}
+
+              // 初稿本文が得られたら即座に章・シーンデータに設定・保存
+              chapter.scenes[sIdx].content = draftedContent;
+              chapter.scenes[sIdx].wordCount = draftedContent.length;
+              chapter.wordCount = chapter.scenes.reduce((sum, sc) => sum + sc.wordCount, 0);
+              currentNovel.totalWordCount = currentNovel.chapters.reduce((sum, ch) => sum + ch.wordCount, 0);
+              currentNovel.lastUpdatedDate = new Date().toLocaleDateString();
+
+              onSaveNovelData(currentNovel, projectId);
+              setLocalNovelData(currentNovel);
 
               // 編集者AI Gemma が校閲＆矛盾チェック
               const MAX_PROOFREAD_RETRIES = 2;
@@ -1189,6 +1201,16 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
               <>
                 {currentNovelData.chapters[activeChapterIndex].scenes[activeSceneIndex].content}
               </>
+            ) : isGenerating ? (
+              <div className="h-full flex flex-col items-center justify-center text-indigo-300 space-y-3 text-center">
+                <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-slate-200">{currentStatus}</p>
+                  <p className="text-xs text-slate-400">
+                    AIが思考・本文執筆中... しばらくお待ちください。
+                  </p>
+                </div>
+              </div>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-2 text-center">
                 <Sparkles className="w-8 h-8 text-slate-600" />
