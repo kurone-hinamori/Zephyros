@@ -74,6 +74,9 @@ impl SuikoEngine {
 
             // 行単位チェック: 孤立カタカナ＋動詞ノイズ（「アしなければならない」等）
             Self::check_isolated_katakana_verbs(line_num, trimmed, &mut issues);
+
+            // 行単位チェック: カッコ崩れ・閉じ忘れ・ルビ崩れ（「レゲット（レの外れ」等）
+            Self::check_bracket_integrity(line_num, trimmed, &mut issues);
         }
 
         // 2. 文単位チェック（一文の長さ、読点密度）
@@ -442,6 +445,113 @@ impl SuikoEngine {
         }
     }
 
+    /// カッコの閉じ忘れ・重複カッコ・ルビ崩れ（例: 「レゲット（レの外れにある」等）のチェック
+    fn check_bracket_integrity(line_num: usize, text: &str, issues: &mut Vec<ProofreadIssue>) {
+        let chars: Vec<char> = text.chars().collect();
+        let len = chars.len();
+
+        let particles = ['の', 'に', 'は', 'を', 'が', 'で', 'と', 'へ', '、', '。', '！', '？', '!', '?', ' '];
+
+        for i in 0..len {
+            if chars[i] == '（' || chars[i] == '(' {
+                // 1. 直前の単語（カタカナ、漢字、ひらがな）を探索
+                let mut start_w = i;
+                while start_w > 0 {
+                    let c = chars[start_w - 1];
+                    if (c >= '\u{30A0}' && c <= '\u{30FF}')
+                        || (c >= '\u{4E00}' && c <= '\u{9FFF}')
+                        || (c >= '\u{3040}' && c <= '\u{309F}')
+                        || c == 'ー'
+                        || c == '・'
+                    {
+                        start_w -= 1;
+                    } else {
+                        break;
+                    }
+                }
+
+                let before_word: String = chars[start_w..i].iter().collect();
+
+                // カッコ内部の走査
+                let close_char = if chars[i] == '（' { '）' } else { ')' };
+                let mut p_idx = i + 1;
+                let mut inner_buf = String::new();
+                let mut closed = false;
+
+                while p_idx < len {
+                    let c = chars[p_idx];
+                    if c == close_char || c == ')' || c == '）' {
+                        closed = true;
+                        break;
+                    }
+                    if !closed && particles.contains(&c) {
+                        // カッコが閉じられないまま助詞や句読点に到達
+                        break;
+                    }
+                    inner_buf.push(c);
+                    p_idx += 1;
+                }
+
+                // A. 前の単語の頭出し・重複（例: 「レゲット（レ」や「カイン（カの」）
+                if !before_word.is_empty() && before_word.chars().count() >= 2 {
+                    let inner_trimmed = inner_buf.trim();
+                    let is_stutter = !inner_trimmed.is_empty()
+                        && inner_trimmed.chars().count() <= 3
+                        && (before_word.starts_with(inner_trimmed) || (inner_trimmed.chars().count() >= 2 && before_word.contains(inner_trimmed)));
+
+                    if is_stutter {
+                        let target_end = if closed { (p_idx + 1).min(len) } else { p_idx };
+                        let full_snippet: String = chars[start_w..target_end].iter().collect();
+
+                        if !issues.iter().any(|iss| iss.target_text == full_snippet) {
+                            issues.push(ProofreadIssue {
+                                line_number: line_num,
+                                category: "カッコ崩れ・閉じ忘れ".to_string(),
+                                severity: "error".to_string(),
+                                message: format!(
+                                    "「{}」にカッコの閉じ忘れ、または単語直後の重複ノイズを検出しました。「{}」への修正を推奨します。",
+                                    full_snippet, before_word
+                                ),
+                                target_text: full_snippet,
+                                suggestion: Some(before_word.clone()),
+                            });
+                        }
+                    } else if !closed && inner_buf.is_empty() {
+                        // 単語直後の空開きカッコ「レゲット（の外れ」
+                        let full_snippet = format!("{}{}", before_word, chars[i]);
+                        if !issues.iter().any(|iss| iss.target_text == full_snippet) {
+                            issues.push(ProofreadIssue {
+                                line_number: line_num,
+                                category: "カッコ崩れ・閉じ忘れ".to_string(),
+                                severity: "error".to_string(),
+                                message: format!(
+                                    "「{}」に閉じられていない不要なカッコを検出しました。「{}」への修正を推奨します。",
+                                    full_snippet, before_word
+                                ),
+                                target_text: full_snippet,
+                                suggestion: Some(before_word.clone()),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. ルビ記号《 》の整合性チェック
+        let open_ruby = text.matches('《').count();
+        let close_ruby = text.matches('》').count();
+        if open_ruby != close_ruby {
+            issues.push(ProofreadIssue {
+                line_number: line_num,
+                category: "ルビ崩れ".to_string(),
+                severity: "error".to_string(),
+                message: "ルビ記号《 》の開きと閉じの数が一致していません。".to_string(),
+                target_text: if open_ruby > close_ruby { "《".to_string() } else { "》".to_string() },
+                suggestion: None,
+            });
+        }
+    }
+
     /// 一文の長さチェック
     fn check_sentence_length(line_num: usize, sentence: &str, issues: &mut Vec<ProofreadIssue>) {
         let len = sentence.chars().count();
@@ -601,3 +711,23 @@ impl SuikoEngine {
         report
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bracket_integrity_detection() {
+        let text = "抜けるような青空から、強烈な陽光が降り注いでいる。辺境の村、レゲット（レの外れにある、切り開かれた訓練場。そこには、ひび割れた岩石や、立ち枯れた大樹、そして土埃が舞う無残な景色が広がっていた。";
+        let res = SuikoEngine::analyze(text);
+        assert!(!res.issues.is_empty(), "Should detect bracket stutter issue");
+        let issue = res
+            .issues
+            .iter()
+            .find(|i| i.category == "カッコ崩れ・閉じ忘れ")
+            .expect("Should find カッコ崩れ・閉じ忘れ issue");
+        assert_eq!(issue.target_text, "レゲット（レ");
+        assert_eq!(issue.suggestion, Some("レゲット".to_string()));
+    }
+}
+
