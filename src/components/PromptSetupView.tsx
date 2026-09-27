@@ -601,7 +601,7 @@ export const PromptSetupView: React.FC<PromptSetupViewProps> = ({
           }}
           className="flex items-center space-x-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition-colors shadow-lg shadow-indigo-600/30"
         >
-          <span>作品一覧に戻る</span>
+          <span>作品詳細に戻る</span>
         </button>
       </div>
     </div>

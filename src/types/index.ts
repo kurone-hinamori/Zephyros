@@ -156,7 +156,7 @@ export interface Project {
   editorLogs?: string[];
 }
 
-export type ActiveTab = 'projects' | 'prompt' | 'bible' | 'glossary' | 'generate' | 'manuscript' | 'ai-settings';
+export type ActiveTab = 'projects' | 'detail' | 'prompt' | 'bible' | 'glossary' | 'generate' | 'manuscript' | 'ai-settings';
 
 // AIによる自動設定抽出レスポンス型
 export interface ExtractedSettingDelta {

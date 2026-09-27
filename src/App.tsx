@@ -10,6 +10,7 @@ import { StoreManager } from './store/novelStore';
 import { OllamaService } from './services/ollamaService';
 import { Header } from './components/Header';
 import { ProjectListView } from './components/ProjectListView';
+import { ProjectDetailView } from './components/ProjectDetailView';
 import { PromptSetupView } from './components/PromptSetupView';
 import { SettingBibleView } from './components/SettingBibleView';
 import { GlossaryView } from './components/GlossaryView';
@@ -315,17 +316,30 @@ export function App() {
 
       {/* メインコンテンツエリア */}
       <main className="flex-1 p-6 overflow-y-auto">
-        {/* 初期画面: 作品一覧・原稿閲覧 */}
-        {(activeTab === 'projects' || activeTab === 'manuscript') && (
+        {/* 作品一覧画面: カードのみ表示 */}
+        {activeTab === 'projects' && (
           <ProjectListView
             projects={projects}
             activeProjectId={activeProjectId}
             onSelectProject={handleSelectProject}
+            onOpenDetail={(id) => {
+              handleSelectProject(id);
+              setActiveTab('detail');
+            }}
             onCreateNewProject={handleCreateNewProject}
             onDuplicateProject={handleDuplicateProject}
             onDeleteProject={handleDeleteProject}
-            onUpdateNovelData={handleSaveNovelData}
+          />
+        )}
+
+        {/* 作品詳細画面: 原稿閲覧・編集 ＆ 各画面移動ボタン */}
+        {(activeTab === 'detail' || activeTab === 'manuscript') && activeProject && (
+          <ProjectDetailView
+            key={`detail-${activeProject.id}`}
+            project={activeProject}
+            onBackToList={() => setActiveTab('projects')}
             onNavigateToTab={(tab) => setActiveTab(tab)}
+            onUpdateNovelData={handleSaveNovelData}
           />
         )}
 
@@ -335,7 +349,7 @@ export function App() {
             key={`prompt-${activeProject.id}`}
             settings={activeProject.promptSettings}
             onSave={handleSavePrompt}
-            onNext={() => setActiveTab('projects')}
+            onNext={() => setActiveTab('detail')}
             isWritingStarted={isWritingStarted}
             aiSettings={aiSettings}
           />
@@ -351,7 +365,7 @@ export function App() {
             onSave={handleSaveBible}
             onSaveGlossary={handleSaveGlossary}
             onSaveBibleAndGlossary={handleSaveBibleAndGlossary}
-            onNext={() => setActiveTab('projects')}
+            onNext={() => setActiveTab('detail')}
           />
         )}
 
@@ -361,7 +375,7 @@ export function App() {
             key={`glossary-${activeProject.id}`}
             glossary={activeProject.glossary}
             onSave={handleSaveGlossary}
-            onNext={() => setActiveTab('projects')}
+            onNext={() => setActiveTab('detail')}
           />
         )}
 
@@ -381,7 +395,7 @@ export function App() {
             onSaveGlossary={handleSaveGlossary}
             onSaveBibleAndGlossary={handleSaveBibleAndGlossary}
             onSaveEditorLogs={handleSaveEditorLogs}
-            onViewManuscript={() => setActiveTab('projects')}
+            onViewManuscript={() => setActiveTab('detail')}
             onViewPrompt={() => setActiveTab('prompt')}
           />
         )}

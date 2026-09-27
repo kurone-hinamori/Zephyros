@@ -30,6 +30,8 @@ export const Header: React.FC<HeaderProps> = ({
     switch (tab) {
       case 'projects':
         return { label: '作品一覧', icon: null };
+      case 'detail':
+        return { label: '作品詳細・原稿プレビュー', icon: <BookOpen className="w-4 h-4 text-indigo-400" /> };
       case 'prompt':
         return { label: 'お題・詳細設定', icon: <Sparkles className="w-4 h-4 text-amber-400" /> };
       case 'bible':
@@ -75,14 +77,24 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </button>
 
-        {/* 作品一覧に戻るボタン (作品一覧以外のタブで表示) */}
+        {/* 戻るボタン (作品一覧以外のタブで表示) */}
         {activeTab !== 'projects' && (
           <button
-            onClick={() => setActiveTab('projects')}
+            onClick={() => {
+              if (activeTab === 'detail' || activeTab === 'ai-settings') {
+                setActiveTab('projects');
+              } else {
+                setActiveTab('detail');
+              }
+            }}
             className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/80 text-indigo-200 text-xs font-semibold shadow transition-all transform hover:-translate-x-0.5"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>作品一覧に戻る</span>
+            <span>
+              {activeTab === 'detail' || activeTab === 'ai-settings'
+                ? '作品一覧に戻る'
+                : '作品詳細に戻る'}
+            </span>
           </button>
         )}
       </div>

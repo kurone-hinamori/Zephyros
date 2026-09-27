@@ -1134,7 +1134,7 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                 className="flex items-center space-x-1.5 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl transition-colors"
               >
                 <FileText className="w-4 h-4" />
-                <span>原稿閲覧</span>
+                <span>作品詳細・原稿閲覧</span>
               </button>
             </>
           )}
